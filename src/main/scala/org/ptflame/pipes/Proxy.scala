@@ -1,4 +1,5 @@
 package org.ptflame.pipes
+import scalaz.{Monad, Hoist}
 
 sealed trait Proxy[P[+_, -_, +_, -_]] {
 

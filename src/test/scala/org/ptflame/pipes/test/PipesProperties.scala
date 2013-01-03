@@ -1,5 +1,7 @@
-package org.ptflame.pipes.test
+package org.ptflame.pipes
+package test
+import org.scalacheck._, org.scalacheck.Test._, scalaz._, scalaz.scalacheck._,
 
-class PipesProperties {
+class PipesProperties extends Properties {
 
 }

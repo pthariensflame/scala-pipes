@@ -1,6 +1,7 @@
-package org.ptflame.pipes.internal
+package org.ptflame.pipes
+package internal
 
-final class ProxyCorrectF[Uo, Ui, Do, Di, +M[+_], +A] {
+sealed abstract class ProxyF[+Uo, -Ui, -Di, +Do, +M[+_], +A] {
 
   
 
