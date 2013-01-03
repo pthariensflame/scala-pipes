@@ -1,14 +1,18 @@
 package org.ptflame.pipes
 import scalaz.{Monad, Hoist}
 
-sealed trait Proxy[P[+_, -_, +_, -_]] {
+trait Proxy[P[+_, -_, -_, +_, +_[+_], +_]] {
 
-	implicit def proxy
+  implicit def monad[Ui, Uo, Do, Di, M[+_]](implicit M: Monad[M]): Monad[({ type f[+a] = P[Ui, Uo, Do, Di, M, a] })#f]
+
+  implicit def hoist[Ui, Uo, Do, Di]: Hoist[({ type f[+m[+_], +a] = P[Ui, Uo, Do, Di, m, a] })#f]
+
+}
 
 }
 
 object Proxy {
 
-  private[Proxy]
+  @inline def apply[P[+_, -_, -_, +_, +_[+_], +_]](implicit P: Proxy[P]): Proxy[P] = P
 
 }
