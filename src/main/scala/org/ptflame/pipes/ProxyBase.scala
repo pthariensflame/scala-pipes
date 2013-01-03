@@ -1,7 +1,14 @@
 package org.ptflame.pipes
 package internal
+import scala.annotation.tailrec
 
-sealed abstract class ProxyBase[+Ui, -Uo, -Do, +Di, +M[+_], +A]
+sealed abstract class ProxyBase[+Ui, -Uo, -Do, +Di, +M[+_], +A] {
+
+  @tailrec def run()(implicit M: Monad[M])
+
+  @tailrec def observe(implicit M: Monad[M]): ProxyBase[Ui, Uo, Do, Di, M, A]
+
+}
 
 object ProxyBase {
 
@@ -11,6 +18,6 @@ object ProxyBase {
 
   private[ProxyBase] final class Wrap[+Ui, -Uo, -Do, +Di, +M[+_], +A](val get: M[ProxyBase[Ui, Uo, Do, Di, M, A]]) extends ProxyBase[Ui, Uo, Do, Di, M, A]
 
-  private[ProxyBase] final class Pure+Ui, -Uo, -Do, +Di, +M[+_], +A](val get: R) extends ProxyBase[Ui, Uo, Do, Di, M, A]
+  private[ProxyBase] final class Pure[+M[+_], +A](val get: A) extends ProxyBase[Nothing, Any, Any, Nothing, M, A]
 
 }
