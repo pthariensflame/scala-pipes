@@ -1,8 +1,8 @@
 package org.ptflame.pipes
 
-sealed abstract class Proxy {
+sealed trait Proxy[P[+_, -_, +_, -_]] {
 
-	
+	implicit def proxy
 
 }
 
