@@ -1,12 +1,12 @@
 package org.ptflame.pipes
 package internal
-import scala.annotation.tailrec
+import scala.annotation.tailrec, scalaz.Monad
 
 sealed abstract class ProxyBase[+Ui, -Uo, -Do, +Di, +M[+_], +A] {
 
-  @tailrec def run()(implicit M: Monad[M])
+  @tailrec def run[M1[X] >: M[X]](implicit M: Monad[M1], evU: Uo <:< Unit, evD: Do <:< Unit): M1[A] = 
 
-  @tailrec def observe(implicit M: Monad[M]): ProxyBase[Ui, Uo, Do, Di, M, A]
+  @tailrec def observe[M1[X] >: M[X]](implicit M: Monad[M1]): ProxyBase[Ui, Uo, Do, Di, M1, A]
 
 }
 
