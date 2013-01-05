@@ -1,5 +1,8 @@
 package org.ptflame
 
+/**
+ * @author Alexander Altman
+ */
 package object pipes {
   import scalaz.Id._
 
