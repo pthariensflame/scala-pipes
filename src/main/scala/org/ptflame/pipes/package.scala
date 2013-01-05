@@ -6,3 +6,9 @@ package object pipes {
   type ProxyBase[+Ui, -Uo, -Do, +Di, +A] = ProxyBaseT[Ui, Uo, Do, Di, Id, A]
 
 }
+
+package pipes {
+
+  
+
+}
