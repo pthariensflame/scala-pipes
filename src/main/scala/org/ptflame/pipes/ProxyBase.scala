@@ -68,16 +68,35 @@ private[pipes] sealed trait ProxyBaseTMonad[Uo, Ui, Di, Do, M[_]] extends Monad[
 
   implicit val M: Functor[M]
 
-  override def map[A, B](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: A => B): ProxyBaseT[Uo, Ui, Di, Do, M, B] = fa match {
-    case 
+  override def map[A, B](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: A => B): ProxyBaseT[Uo, Ui, Di, Do, M, B] = {
+    def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, M, A] = p match {
+        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
+        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
+        case Wrap(m) => Wrap(M.map[ProxyBaseT[Uo, Ui, Di, Do, M, A], ProxyBaseT[Uo, Ui, Di, Do, M, A]](m) { go(_) })
+        case Pure(r) => f(r)
+    }
+    go(fa)
   }
 
   @inline override def point[A](a: => A): ProxyBaseT[Uo, Ui, Di, Do, M, A] = Pure(Need(a))
 
-  override def ap[A, B](fa: => ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: => ProxyBaseT[Uo, Ui, Di, Do, M, (A => B)]): ProxyBaseT[Uo, Ui, Di, Do, M, B]
+  override def ap[A, B](fa: => ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: => ProxyBaseT[Uo, Ui, Di, Do, M, (A => B)]): ProxyBaseT[Uo, Ui, Di, Do, M, B] = {
+    def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, M, A] = p match {
+        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
+        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
+        case Wrap(m) => Wrap(M.map[ProxyBaseT[Uo, Ui, Di, Do, M, A], ProxyBaseT[Uo, Ui, Di, Do, M, A]](m) { go(_) })
+        case Pure(r) => M.map[ProxyBaseT[Uo, Ui, Di, Do, M, A], ProxyBaseT[Uo, Ui, Di, Do, M, A]]
+    }
+    go(f)
+  }
 
   override def bind[A, B](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: A => ProxyBaseT[Uo, Ui, Di, Do, M, B]): ProxyBaseT[Uo, Ui, Di, Do, M, B] = {
-    def go()
+    def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, M, A] = p match {
+        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
+        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
+        case Wrap(m) => Wrap(M.map[ProxyBaseT[Uo, Ui, Di, Do, M, A], ProxyBaseT[Uo, Ui, Di, Do, M, A]](m) { go(_) })
+        case Pure(r) => f(r)
+    }
     go(fa)
   }
 
@@ -85,16 +104,21 @@ private[pipes] sealed trait ProxyBaseTMonad[Uo, Ui, Di, Do, M[_]] extends Monad[
 
 private[pipes] sealed trait ProxyBaseTHoist[Uo, Ui, Di, Do] extends Hoist[({ type f[m[_], +a] = ProxyBaseT[Uo, Ui, Di, Do, m, a] })#f] {
 
-  implicit override def apply[M[_]](implicit arg0: Monad[M]): Monad[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f] = new ProxyBaseTMonad[Uo, Ui, Di, Do, M] {
+  implicit override def apply[M[_]](implicit Mx: Monad[M]): Monad[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f] = new ProxyBaseTMonad[Uo, Ui, Di, Do, M] {
 
-    implicit override val M: Monad[M] = arg0
+    implicit override val M: Monad[M] = Mx
 
   }
 
-  override def hoist[M[_], N[_]](f: NaturalTransformation[M, N])(implicit arg0: Monad[M]): NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] = new NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] {
+  override def hoist[M[_], N[_]](f: NaturalTransformation[M, N])(implicit M: Monad[M]): NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] = new NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] {
 
     override def apply[A](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, N, A] = {
-      def go()
+      def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, N, A] = p match {
+        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
+        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
+        case Wrap(m) => Wrap(f(M.map[ProxyBaseT[Uo, Ui, Di, Do, M, A], ProxyBaseT[Uo, Ui, Di, Do, M, A]](m) { go(_) }))
+        case Pure(r) => Pure(r)
+      }
       go(fa.observe)
     }
 
