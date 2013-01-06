@@ -116,6 +116,6 @@ object ProxyHoist {
 
 trait ProxyNaturalTransformation[P1[+_, -_, -_, +_, +_], P2[+_, -_, -_, +_, +_]] {
 
-  def apply[Uo, Ui, ]
+  def apply[Uo, Ui, Di, Do, A](p: P1[Uo, Ui, Di, Do, A]): P2[Uo, Ui, Di, Do, A]
 
 }

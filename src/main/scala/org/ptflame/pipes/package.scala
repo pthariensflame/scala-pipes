@@ -1,4 +1,5 @@
 package org.ptflame
+import scalaz.Id.Id
 
 /**
  * A fairly direct port of Gabriel Gonzalez\'s Haskell `pipes` library to Scala and Scalaz.
