@@ -1,6 +1,8 @@
 package org.ptflame
 
 /**
+ * A fairly direct port of Gabriel Gonzalez\'s Haskell `pipes` library to Scala and Scalaz.
+ *
  * @author Alexander Altman
  */
 package object pipes extends ProxyBaseTInstances {
