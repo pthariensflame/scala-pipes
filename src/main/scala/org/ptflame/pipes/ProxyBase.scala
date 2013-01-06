@@ -42,32 +42,20 @@ private[pipes] final case class Wrap[Uo, Ui, Di, Do, M[+_], A](get: M[ProxyBaseT
 
 private[pipes] final case class Pure[M[+_], A](get: A) extends ProxyBaseT[Nothing, Any, Any, Nothing, M, A]()
 
-trait ProxyBaseTInstances0 {
-
-
+trait ProxyBaseTInstances0 { this: ProxyBaseTInstances with Singleton =>
 
 }
 
-trait ProxyBaseTInstances extends ProxyBaseTInstances0 {
-
-  type ProxyBase[+Ui, -Uo, -Do, +Di, +A] = ProxyBaseT[Ui, Uo, Do, Di, Id, A]
-
-  type ProxyBaseP[M[+_]] = {
-    type P[+Ui, -Uo, -Do, +Di, +A] = ProxyBaseT[Uo, Ui, Di, Do, M, A]
-  }
-
-  type ProxyBaseM[+Uo, -Ui, -Di, +Do] = {
-    type M[F[+_], A] = ProxyBaseT[Uo, Ui]
-  }
+trait ProxyBaseTInstances extends ProxyBaseTInstances0 { this: Singleton =>
 
 }
 
 object ProxyBaseT extends ProxyBaseTInstances
 
-private[pipes] sealed trait ProxyBaseTProxy[M[+_]] extends Proxy[ProxyBaseP[M]#P] {
+private[pipes] sealed trait ProxyBaseTProxy[M[+_]] extends Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] {
 
   implicit val M: Functor[M]
 
-  implicit def
+  implicit override def monad[Uo, Ui, Di, Do]: Monad[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f] = new Monad
 
 }
