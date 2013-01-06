@@ -1,6 +1,6 @@
 package org.ptflame.pipes
 package internal
-import scala.annotation.tailrec, scalaz.{Functor, Monad, MonadPlus, Need}, scalaz.Id.Id
+import scala.annotation.tailrec, scalaz.{Functor, Monad, Hoist, Need, NaturalTransformation}, scalaz.Id.Id
 
 /**
  * 
@@ -10,7 +10,7 @@ import scala.annotation.tailrec, scalaz.{Functor, Monad, MonadPlus, Need}, scala
  * @tparam Di downstream input type of the proxy
  * @tparam Do downstream output type of the proxy
  */
-sealed abstract class ProxyBaseT[+Uo, -Ui, -Di, +Do, M[+_], +A]() {
+sealed abstract class ProxyBaseT[+Uo, -Ui, -Di, +Do, M[_], +A]() {
 
   def run(implicit M: Monad[M], evU: Unit <:< Ui, evD: Unit <:< Di): M[A] = {
     @tailrec def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): M[A] = p match {
@@ -34,13 +34,13 @@ sealed abstract class ProxyBaseT[+Uo, -Ui, -Di, +Do, M[+_], +A]() {
 
 }
 
-private[pipes] final case class Request[Uo, Ui, Di, Do, M[+_], A](get: Need[Uo], next: Ui => ProxyBaseT[Uo, Ui, Di, Do, M, A]) extends ProxyBaseT[Uo, Ui, Di, Do, M, A]()
+private[pipes] final case class Request[Uo, Ui, Di, Do, M[_], A](get: Need[Uo], next: Ui => ProxyBaseT[Uo, Ui, Di, Do, M, A]) extends ProxyBaseT[Uo, Ui, Di, Do, M, A]()
 
-private[pipes] final case class Respond[Uo, Ui, Di, Do, M[+_], A](get: Need[Do], next: Di => ProxyBaseT[Uo, Ui, Di, Do, M, A]) extends ProxyBaseT[Uo, Ui, Di, Do, M, A]()
+private[pipes] final case class Respond[Uo, Ui, Di, Do, M[_], A](get: Need[Do], next: Di => ProxyBaseT[Uo, Ui, Di, Do, M, A]) extends ProxyBaseT[Uo, Ui, Di, Do, M, A]()
 
-private[pipes] final case class Wrap[Uo, Ui, Di, Do, M[+_], A](get: M[ProxyBaseT[Uo, Ui, Di, Do, M, A]]) extends ProxyBaseT[Uo, Ui, Di, Do, M, A]()
+private[pipes] final case class Wrap[Uo, Ui, Di, Do, M[_], A](get: M[ProxyBaseT[Uo, Ui, Di, Do, M, A]]) extends ProxyBaseT[Uo, Ui, Di, Do, M, A]()
 
-private[pipes] final case class Pure[M[+_], A](get: Need[A]) extends ProxyBaseT[Nothing, Any, Any, Nothing, M, A]()
+private[pipes] final case class Pure[M[_], A](get: Need[A]) extends ProxyBaseT[Nothing, Any, Any, Nothing, M, A]()
 
 trait ProxyBaseTInstances0 { this: ProxyBaseTInstances with Singleton =>
 
@@ -52,7 +52,7 @@ trait ProxyBaseTInstances extends ProxyBaseTInstances0 { this: Singleton =>
 
 object ProxyBaseT extends ProxyBaseTInstances
 
-private[pipes] sealed trait ProxyBaseTProxy[M[+_]] extends Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] { self =>
+private[pipes] sealed trait ProxyBaseTProxy[M[_]] extends Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] { self =>
 
   implicit val M: Functor[M]
 
@@ -68,10 +68,36 @@ private[pipes] sealed trait ProxyBaseTProxy[M[+_]] extends Proxy[({ type f[+uO, 
 
 }
 
-private[pipes] sealed trait ProxyBaseTMonad[Uo, Ui, Di, Do, M[+_]] extends Monad[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f] {
+private[pipes] sealed trait ProxyBaseTMonad[Uo, Ui, Di, Do, M[_]] extends Monad[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f] {
 
-  override def map[A, B](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: A => B): ProxyBaseT[Uo, Ui, Di, Do, M, B]
+  implicit val M: Functor[M]
 
-  override def point[A](a: => A): ProxyBaseT[Uo, Ui, Di, Do, M, A]
+  override def map[A, B](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: A => B): ProxyBaseT[Uo, Ui, Di, Do, M, B] = fa match {
+    case 
+  }
+
+  @inline override def point[A](a: => A): ProxyBaseT[Uo, Ui, Di, Do, M, A] = Pure(Need(a))
+
+  override def ap
+
+  override def bind
+
+}
+
+private[pipes] sealed trait ProxyBaseTHoist[Uo, Ui, Di, Do] extends Hoist[({ type f[m[_], +a] = ProxyBaseT[Uo, Ui, Di, Do, m, a] })#f] {
+
+  implicit override def apply[M[_]](implicit arg0: Monad[M]): Monad[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f] = new ProxyBaseTMonad[Uo, Ui, Di, Do, M] {
+
+    implicit override val M: Monad[M] = arg0
+
+  }
+
+  override def hoist[M[_], N[_]](f: NaturalTransformation[M, N])(implicit arg0: Monad[M]): NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] = new NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] {
+
+    override def apply[A](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, N, A]
+
+  }
+
+  override def liftM[M[_], A](a: M[A])(implicit arg0: Monad[M]): ProxyBaseT[Uo, Ui, Di, Do, M, A] = 
 
 }
