@@ -50,7 +50,9 @@ trait Proxy[P[+_, -_, -_, +_, +_]] {
    */
   def push[Uo, Ui, Mu, Md, Di, Do, A](p1: Ui => P[Uo, Ui, Mu, Md, A], p2: Md => P[Mu, Md, Di, Do, A]): Ui => P[Uo, Ui, Di, Do, A]
 
-  def request[Uo, Ui, Di, Do, A](p1: Ui => P[Uo, Ui, Mu, Md, A])
+  def request[Uo, Ui, Di, Do]: Uo => P[Uo, Ui, Di, Do, Ui]
+
+  def respond[Uo, Ui, Di, Do]: Do => P[Uo, Ui, Di, Do, Di]
 
 }
 
@@ -73,6 +75,10 @@ object ProxyPlus {
 }
 
 trait Interact[P[+_, -_, -_, +_, +_]] extends Proxy[P] {
+
+  def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => P[A1, A2, K1, K2, B2], p2: C1 => P[B1, B2, K1, K2, C2]): C1 => P[A1, A2, K1, K2, C2]
+
+  def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => P[K1, K2, B1, B2, A2], p2: B2 => P[K1, K2, C1, C2, B1]): A1 => P[K1, K2, C1, C2, A2]
 
 }
 

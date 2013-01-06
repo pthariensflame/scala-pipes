@@ -3,15 +3,8 @@ package org.ptflame
 /**
  * @author Alexander Altman
  */
-package object pipes {
-  import scalaz.Id._
+package object pipes extends ProxyBaseTInstances {
 
-  type ProxyBase[+Ui, -Uo, -Do, +Di, +A] = ProxyBaseT[Ui, Uo, Do, Di, Id, A]
-
-}
-
-package pipes {
-
-  
+  @inline implicit def ToProxyOps[I, P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](p: I => P[Uo, Ui, Di, Do, A]): ProxyOps[I, P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A] = new ProxyOps[I, P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](p)
 
 }
