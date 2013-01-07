@@ -1,4 +1,5 @@
-.*
 nbproject/
 target/
 build.xml
+.lib/
+.DS_Store

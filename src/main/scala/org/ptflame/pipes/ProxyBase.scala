@@ -1,5 +1,5 @@
 package org.ptflame.pipes
-import scalaz.{Functor, Monad, Hoist, Need, NaturalTransformation}
+import scalaz.{Functor, Bind, Monad, Hoist, Need, NaturalTransformation}
 
 /**
  * 
@@ -46,11 +46,21 @@ private[pipes] final case class Wrap[Uo, Ui, Di, Do, M[_], A](get: M[ProxyBaseT[
 
 private[pipes] final case class Pure[M[_], A](get: Need[A]) extends ProxyBaseT[Nothing, Any, Any, Nothing, M, A]()
 
-trait ProxyBaseTInstances {
+trait ProxyBaseTInstances0 {
 
   implicit def ProxyBaseTProxy[M[_]](implicit Mx: Functor[M]): Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] = new ProxyBaseTProxy[M] {
 
     implicit override val M: Functor[M] = Mx
+
+  }
+
+}
+
+trait ProxyBaseTInstances extends ProxyBaseTInstances0 {
+
+  implicit def ProxyBaseTInteract[M[_]](implicit Mx: Bind[M]): Interact[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] = new ProxyBaseTInteract[M] {
+
+    implicit override val M: Bind[M] = Mx
 
   }
 
@@ -97,6 +107,21 @@ private[pipes] sealed trait ProxyBaseTProxy[M[_]] extends Proxy[({ type f[+uO, -
   override def pull[Uo, Ui, Mu, Md, Di, Do, A](p1: Mu => ProxyBaseT[Uo, Ui, Mu, Md, M, A], p2: Di => ProxyBaseT[Mu, Md, Di, Do, M, A]): Di => ProxyBaseT[Uo, Ui, Di, Do, M, A] = { x => self.pipeFrom(p1, p2(x)) }
 
   override def push[Uo, Ui, Mu, Md, Di, Do, A](p1: Ui => ProxyBaseT[Uo, Ui, Mu, Md, M, A], p2: Md => ProxyBaseT[Mu, Md, Di, Do, M, A]): Ui => ProxyBaseT[Uo, Ui, Di, Do, M, A] = { x => self.pipeTo(p1(x), p2) }
+
+}
+
+private[pipes] sealed trait ProxyBaseTInteract[M[_]] extends Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] with ProxyBaseTProxy[M] {
+  
+  implicit override val M: Bind[M]
+
+  def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => P[A1, A2, K1, K2, B2], p2: C1 => P[B1, B2, K1, K2, C2]): C1 => P[A1, A2, K1, K2, C2] = {
+    def go(p: P[B1, B2, K1, K2, C2]): P[A1, A2, K1, K2, C2] = p match {
+      case Request
+    }
+    { x => go(p2(x)) }
+  }
+
+  def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => P[K1, K2, B1, B2, A2], p2: B2 => P[K1, K2, C1, C2, B1]): A1 => P[K1, K2, C1, C2, A2]
 
 }
 
