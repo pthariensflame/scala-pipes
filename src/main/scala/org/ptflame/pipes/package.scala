@@ -2,7 +2,7 @@ package org.ptflame
 import scalaz.Id.Id
 
 /**
- * A fairly direct port of Gabriel Gonzalez\'s Haskell `pipes` library to Scala and Scalaz.
+ * A fairly direct port of Gabriel Gonzalez's Haskell `pipes` library to Scala and Scalaz.
  *
  * @author Alexander Altman
  */
@@ -16,6 +16,9 @@ package object pipes extends ProxyBaseTInstances {
 
 package pipes {
 
+  /**
+   * Syntax for proxies.
+   */
   package object syntax {
 
     @inline implicit def ToProxyKOps[I, P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](p: I => P[Uo, Ui, Di, Do, A]): ProxyKOps[I, P, Uo, Ui, Di, Do, A] = ProxyKOps[I, P, Uo, Ui, Di, Do, A](p)

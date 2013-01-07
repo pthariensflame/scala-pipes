@@ -21,6 +21,11 @@ sealed abstract class ProxyBaseT[+Uo, -Ui, -Di, +Do, M[_], +A]() {
     go(this)
   }
 
+  /**
+   * Rearranges internals to structually (not just behaviorally) preserve the monad transformer laws.
+   *
+   * @param M a [[scalaz.Monad]] instance for `M`
+   */
   def observe(implicit M: Monad[M]): ProxyBaseT[Uo, Ui, Di, Do, M, A] = {
     def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): M[ProxyBaseT[Uo, Ui, Di, Do, M, A]] = p match {
       case Wrap(m) => M.bind(m) { go(_) }
