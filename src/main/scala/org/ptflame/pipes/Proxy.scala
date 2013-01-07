@@ -14,7 +14,9 @@ trait Proxy[P[+_, -_, -_, +_, +_]] {
    */
   implicit def monad[Uo, Ui, Di, Do]: Monad[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f]
 
-  
+  def request[Uo, Ui, Di, Do]: Uo => P[Uo, Ui, Di, Do, Ui]
+
+  def respond[Uo, Ui, Di, Do]: Do => P[Uo, Ui, Di, Do, Di]
 
   /**
    * Compose two proxies blocked on a `respond`, generating a new proxy blocked on a `respond`.  Begins from the downstream end and satisfies every `request` with a `respond`.
@@ -49,10 +51,6 @@ trait Proxy[P[+_, -_, -_, +_, +_]] {
    * @return the push-based proxy composition of p1 and p2
    */
   def push[Uo, Ui, Mu, Md, Di, Do, A](p1: Ui => P[Uo, Ui, Mu, Md, A], p2: Md => P[Mu, Md, Di, Do, A]): Ui => P[Uo, Ui, Di, Do, A]
-
-  def request[Uo, Ui, Di, Do]: Uo => P[Uo, Ui, Di, Do, Ui]
-
-  def respond[Uo, Ui, Di, Do]: Do => P[Uo, Ui, Di, Do, Di]
 
 }
 
