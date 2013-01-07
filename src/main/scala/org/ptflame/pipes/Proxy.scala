@@ -1,7 +1,7 @@
 package org.ptflame.pipes
 import scalaz.{Monad, MonadPlus}
 
-trait Proxy[P[+_, -_, -_, +_, +_]] {
+trait Proxy[P[+_, -_, -_, +_, +_]] { self =>
 
   /**
    * Every proxy is a monad.
@@ -14,9 +14,13 @@ trait Proxy[P[+_, -_, -_, +_, +_]] {
    */
   implicit def monad[Uo, Ui, Di, Do]: Monad[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f]
 
-  def request[Uo, Ui, Di, Do]: Uo => P[Uo, Ui, Di, Do, Ui]
+  def request[Uo, Ui, Di, Do](uO: => Uo): P[Uo, Ui, Di, Do, Ui]
 
-  def respond[Uo, Ui, Di, Do]: Do => P[Uo, Ui, Di, Do, Di]
+  final def requestK[Uo, Ui, Di, Do]: Uo => P[Uo, Ui, Di, Do, Ui] = { self.request(_) }
+
+  def respond[Uo, Ui, Di, Do](dO: => Do): P[Uo, Ui, Di, Do, Di]
+
+  final def respondK[Uo, Ui, Di, Do]: Do => P[Uo, Ui, Di, Do, Di] = { self.respond(_) }
 
   /**
    * Compose two proxies blocked on a `respond`, generating a new proxy blocked on a `respond`.  Begins from the downstream end and satisfies every `request` with a `respond`.
@@ -100,6 +104,18 @@ object ProxyTrans {
 
 }
 
+trait ProxyNaturalTransformation[-P1[+_, -_, -_, +_, +_], +P2[+_, -_, -_, +_, +_]] {
+
+  def apply[Uo, Ui, Di, Do, A](p: P1[Uo, Ui, Di, Do, A]): P2[Uo, Ui, Di, Do, A]
+
+}
+
+object ProxyNaturalTransformation {
+
+  implicit def pNatToFunction[P1[+_, -_, -_, +_, +_], P2[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](f: ProxyNaturalTransformation[P1, P2]): P1[Uo, Ui, Di, Do, A] => P2[Uo, Ui, Di, Do, A] = { p => f[Uo, Ui, Di, Do, A](p) }
+
+}
+
 trait ProxyHoist[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]] extends ProxyTrans[PT] {
 
   def hoistP[P1[+_, -_, -_, +_, +_], P2[+_, -_, -_, +_, +_]](f: ProxyNaturalTransformation[P1, P2]): ProxyNaturalTransformation[({ type f[+uO, -uI, -dI, +dO, +a] = PT[P1, uO, uI, dI, dO, a] })#f, ({ type f[+uO, -uI, -dI, +dO, +a] = PT[P2, uO, uI, dI, dO, a] })#f]
@@ -109,11 +125,5 @@ trait ProxyHoist[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]] extends ProxyTra
 object ProxyHoist {
 
   @inline def apply[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]](implicit PT: ProxyHoist[PT]): ProxyHoist[PT] = PT
-
-}
-
-trait ProxyNaturalTransformation[P1[+_, -_, -_, +_, +_], P2[+_, -_, -_, +_, +_]] {
-
-  def apply[Uo, Ui, Di, Do, A](p: P1[Uo, Ui, Di, Do, A]): P2[Uo, Ui, Di, Do, A]
 
 }

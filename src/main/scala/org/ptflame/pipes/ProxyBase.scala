@@ -71,9 +71,9 @@ private[pipes] sealed trait ProxyBaseTProxy[M[_]] extends Proxy[({ type f[+uO, -
 
   }
 
-  override def request[Uo, Ui, Di, Do]: Uo => ProxyBaseT[Uo, Ui, Di, Do, M, Ui] = { (x: Uo) => Request(Need(x), (x => Pure(Need(x)))) }
+  override def request[Uo, Ui, Di, Do](uO: => Uo): ProxyBaseT[Uo, Ui, Di, Do, M, Ui] = Request(Need(uO), (x => Pure(Need(x))))
 
-  override def respond[Uo, Ui, Di, Do]: Do => ProxyBaseT[Uo, Ui, Di, Do, M, Di] = { (x: Do) => Respond(Need(x), (x => Pure(Need(x)))) }
+  override def respond[Uo, Ui, Di, Do](dO: => Do): ProxyBaseT[Uo, Ui, Di, Do, M, Di] = Respond(Need(dO), (x => Pure(Need(x))))
 
   private[this] def pipeTo[Uo, Ui, Mu, Md, Di, Do, A](p: ProxyBaseT[Uo, Ui, Mu, Md, M, A], f: Md => ProxyBaseT[Mu, Md, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, M, A] = p match {
     case r@Request(_, fUi) => r.copy(next=(x => self.pipeTo(fUi(x), f)))
