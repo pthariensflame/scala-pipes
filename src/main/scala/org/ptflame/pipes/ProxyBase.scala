@@ -116,7 +116,8 @@ private[pipes] sealed trait ProxyBaseTInteract[M[_]] extends Proxy[({ type f[+uO
 
   def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => P[A1, A2, K1, K2, B2], p2: C1 => P[B1, B2, K1, K2, C2]): C1 => P[A1, A2, K1, K2, C2] = {
     def go(p: P[B1, B2, K1, K2, C2]): P[A1, A2, K1, K2, C2] = p match {
-      case Request
+      case Request(uO, fUi) => M.bind(p1(uO)) { x => go(fUi(x)) }
+      case r@Respond(_, f) => 
     }
     { x => go(p2(x)) }
   }
