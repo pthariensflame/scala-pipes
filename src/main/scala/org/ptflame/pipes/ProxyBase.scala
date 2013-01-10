@@ -94,14 +94,14 @@ private[pipes] sealed trait ProxyBaseTProxy[M[_]] extends Proxy[({ type f[+uO, -
     case r@Request(_, fUi) => r.copy(next=(x => self.pipeTo(fUi(x), f)))
     case Respond(dO, fDi) => self.pipeFrom(fDi, f(dO.value))
     case Wrap(m) => Wrap(M.map(m) { self.pipeTo(_, f) })
-    case Pure(r) => Pure(r)
+    case r@Pure(_) => r
   }
 
   private[this] def pipeFrom[Uo, Ui, Mu, Md, Di, Do, A](f: Mu => ProxyBaseT[Uo, Ui, Mu, Md, M, A], p: ProxyBaseT[Mu, Md, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, M, A] = p match {
     case Request(uO, fUi) => self.pipeTo(f(uO.value), fUi)
     case r@Respond(_, fDi) => r.copy(next=(x => self.pipeFrom(f, fDi(x))))
     case Wrap(m) => Wrap(M.map(m) { self.pipeFrom(f, _) })
-    case Pure(r) => Pure(r)
+    case r@Pure(_) => r
   }
 
   override def pull[Uo, Ui, Mu, Md, Di, Do, A](p1: Mu => ProxyBaseT[Uo, Ui, Mu, Md, M, A], p2: Di => ProxyBaseT[Mu, Md, Di, Do, M, A]): Di => ProxyBaseT[Uo, Ui, Di, Do, M, A] = { x => self.pipeFrom(p1, p2(x)) }
@@ -110,19 +110,29 @@ private[pipes] sealed trait ProxyBaseTProxy[M[_]] extends Proxy[({ type f[+uO, -
 
 }
 
-private[pipes] sealed trait ProxyBaseTInteract[M[_]] extends Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] with ProxyBaseTProxy[M] {
+private[pipes] sealed trait ProxyBaseTInteract[M[_]] extends Interact[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] with ProxyBaseTProxy[M] {
   
   implicit override val M: Bind[M]
 
-  def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => P[A1, A2, K1, K2, B2], p2: C1 => P[B1, B2, K1, K2, C2]): C1 => P[A1, A2, K1, K2, C2] = {
-    def go(p: P[B1, B2, K1, K2, C2]): P[A1, A2, K1, K2, C2] = p match {
+  def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => ProxyBaseT[A1, A2, K1, K2, M, B2], p2: C1 => ProxyBaseT[B1, B2, K1, K2, M, C2]): C1 => ProxyBaseT[A1, A2, K1, K2, M, C2] = {
+    def go(p: ProxyBaseT[B1, B2, K1, K2, M, C2]): ProxyBaseT[A1, A2, K1, K2, M, C2] = p match {
       case Request(uO, fUi) => M.bind(p1(uO)) { x => go(fUi(x)) }
-      case r@Respond(_, f) => 
+      case r@Respond(_, f) => r.copy(next=(x => go(f(x))))
+      case Wrap(m) => Wrap(M.map(m) { go(_) })
+      case r@Pure(_) => r
     }
     { x => go(p2(x)) }
   }
 
-  def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => P[K1, K2, B1, B2, A2], p2: B2 => P[K1, K2, C1, C2, B1]): A1 => P[K1, K2, C1, C2, A2]
+  def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => ProxyBaseT[K1, K2, B1, B2, M, A2], p2: B2 => ProxyBaseT[K1, K2, C1, C2, M, B1]): A1 => ProxyBaseT[K1, K2, C1, C2, M, A2] = {
+    def go(p: ProxyBaseT[K1, K2, B1, B2, M, A2]): ProxyBaseT[K1, K2, C1, C2, M, A2] = p match {
+      case r@Request(_, f) => r.copy(next=(x => go(f(x))))
+      case Respond(dO, fDi) => M.bind(p2(dO)) { x => go(fDi(x)) }
+      case Wrap(m) => Wrap(M.map(m) { go(_) })
+      case r@Pure(_) => r
+    }
+    { x => go(p1(x)) }
+  }
 
 }
 
@@ -132,10 +142,10 @@ private[pipes] sealed trait ProxyBaseTMonad[Uo, Ui, Di, Do, M[_]] extends Monad[
 
   override def map[A, B](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: A => B): ProxyBaseT[Uo, Ui, Di, Do, M, B] = {
     def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, M, B] = p match {
-        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
-        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
-        case Wrap(m) => Wrap(M.map(m) { go(_) })
-        case Pure(r) => Pure(Need(f(r.value)))
+      case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
+      case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
+      case Wrap(m) => Wrap(M.map(m) { go(_) })
+      case Pure(r) => Pure(Need(f(r.value)))
     }
     go(fa)
   }
@@ -144,20 +154,20 @@ private[pipes] sealed trait ProxyBaseTMonad[Uo, Ui, Di, Do, M[_]] extends Monad[
 
   override def ap[A, B](fa: => ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: => ProxyBaseT[Uo, Ui, Di, Do, M, (A => B)]): ProxyBaseT[Uo, Ui, Di, Do, M, B] = {
     def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, (A => B)]): ProxyBaseT[Uo, Ui, Di, Do, M, B] = p match {
-        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
-        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
-        case Wrap(m) => Wrap(M.map(m) { go(_) })
-        case Pure(r) => self.map(fa)(r.value)
+      case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
+      case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
+      case Wrap(m) => Wrap(M.map(m) { go(_) })
+      case Pure(r) => self.map(fa)(r.value)
     }
     go(f)
   }
 
   override def bind[A, B](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A])(f: A => ProxyBaseT[Uo, Ui, Di, Do, M, B]): ProxyBaseT[Uo, Ui, Di, Do, M, B] = {
     def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, M, B] = p match {
-        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
-        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
-        case Wrap(m) => Wrap(M.map(m) { go(_) })
-        case Pure(r) => f(r.value)
+      case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
+      case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
+      case Wrap(m) => Wrap(M.map(m) { go(_) })
+      case Pure(r) => f(r.value)
     }
     go(fa)
   }
@@ -179,7 +189,7 @@ private[pipes] sealed trait ProxyBaseTHoist[Uo, Ui, Di, Do] extends Hoist[({ typ
         case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
         case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
         case Wrap(m) => Wrap(f(M.map(m) { go(_) }))
-        case Pure(r) => Pure(r)
+        case r@Pure(_) => r
       }
       go(fa.observe)
     }
