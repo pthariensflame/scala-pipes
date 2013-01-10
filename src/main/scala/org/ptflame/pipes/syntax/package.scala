@@ -1,8 +1,11 @@
 package org.ptflame.pipes
-package syntax
+import language.higherKinds
 import scalaz.syntax.Ops
 
-private[syntax] trait OpsClasses { this: org.ptflame.pipes.syntax.`package` =>
+/**
+ * Syntax for proxies.
+ */s
+package object syntax {
 
   implicit class ProxyKOps[I, P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](override val self: I => P[Uo, Ui, Di, Do, A]) extends Ops[I => P[Uo, Ui, Di, Do, A]] {
 

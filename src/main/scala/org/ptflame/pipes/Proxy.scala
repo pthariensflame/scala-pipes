@@ -1,4 +1,5 @@
 package org.ptflame.pipes
+import language.higherKinds
 import scalaz.{Monad, MonadPlus}
 
 trait Proxy[P[+_, -_, -_, +_, +_]] { self =>

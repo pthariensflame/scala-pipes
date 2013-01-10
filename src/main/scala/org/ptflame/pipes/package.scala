@@ -1,4 +1,5 @@
 package org.ptflame
+import language.higherKinds
 import scalaz.Id.Id
 
 /**
@@ -11,14 +12,5 @@ package object pipes extends ProxyBaseTInstances {
   type ProxyBase[+Uo, -Ui, -Di, +Do, +A] = ProxyBaseT[Uo, Ui, Di, Do, Id, A]
 
   object ProxyBase extends ProxyBaseTInstances
-
-}
-
-package pipes {
-
-  /**
-   * Syntax for proxies.
-   */
-  package object syntax extends OpsClasses
 
 }
