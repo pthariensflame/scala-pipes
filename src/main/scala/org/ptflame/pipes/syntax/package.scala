@@ -14,7 +14,7 @@ package syntax {
   /**
    * This shouldn't be necessary.
    *
-   * @see https://issues.scala-lang.org/browse/SI-6960
+   * @see https://issues.scala-lang.org/browse/SI-5877
    */
   sealed trait syntax0 extends syntax1 { this: org.ptflame.pipes.syntax.`package`.type =>
 
