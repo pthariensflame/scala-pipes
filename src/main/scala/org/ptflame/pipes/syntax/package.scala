@@ -11,6 +11,11 @@ package syntax {
 
   }
 
+  /**
+   * This shouldn't be necessary.
+   *
+   * @see https://issues.scala-lang.org/browse/SI-6960
+   */
   sealed trait syntax0 extends syntax1 { this: org.ptflame.pipes.syntax.`package`.type =>
 
     implicit val iC: implicitConversions.type = implicitConversions
