@@ -1,6 +1,6 @@
 package org.ptflame
 import language.higherKinds
-import scalaz.IdInstances
+import scalaz.{Monad, IdInstances}
 
 /**
  * A fairly direct port of Gabriel Gonzalez's Haskell `pipes` library to Scala and Scalaz.
