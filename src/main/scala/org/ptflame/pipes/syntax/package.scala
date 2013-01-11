@@ -1,5 +1,5 @@
 package org.ptflame.pipes
-import scalaz.syntax.Ops
+import scalaz.syntax.{Ops, ToMonadPlusOps, ToContravariantOps}
 
 /**
  * Syntax for proxies.

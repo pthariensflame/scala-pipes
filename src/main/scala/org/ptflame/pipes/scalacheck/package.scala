@@ -37,8 +37,8 @@ package object scalacheck {
     v
   }
 
-  implicit def proxyBaseShrink[Uo, Ui, Di, Do, A](implicit SkA: Shrink[A], SkUo: Shrink[Uo], SkDo: Shrink[Do]): Shrink[ProxyBaseT[Uo, Ui, Di, Do, M, A]] = {
-    implicit lazy val v: Shrink[ProxyBaseT[Uo, Ui, Di, Do, M, A]] = proxyBaseTShrink[Uo, Ui, Di, Do, Id, A]
+  implicit def proxyBaseShrink[Uo, Ui, Di, Do, A](implicit SkA: Shrink[A], SkUo: Shrink[Uo], SkDo: Shrink[Do]): Shrink[ProxyBase[Uo, Ui, Di, Do, A]] = {
+    implicit lazy val v: Shrink[ProxyBase[Uo, Ui, Di, Do, A]] = proxyBaseTShrink[Uo, Ui, Di, Do, Id, A]
     v
   }
 
