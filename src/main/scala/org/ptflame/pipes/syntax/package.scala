@@ -1,12 +1,32 @@
 package org.ptflame.pipes
+import language.implicitConversions
+import scalaz.{Monad, MonadPlus}
 import scalaz.syntax.{Ops, ToMonadPlusOps, ToContravariantOps}
+
+package syntax {
+
+  sealed trait syntax0 { this: org.ptflame.pipes.syntax.`package`.type =>
+
+    @inline implicit def ProxyMonad[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit P: Proxy[P]): Monad[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f] = P.monad[Uo, Ui, Di, Do]
+
+  }
+
+}
 
 /**
  * Syntax for proxies.
  */
 package object syntax extends ToMonadPlusOps with ToContravariantOps {
 
+  implicit val iC: implicitConversions.type = implicitConversions
+
+  @inline implicit def ProxyPlusMonadPlus[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit P: ProxyPlus[P]): MonadPlus[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f] = P.monad[Uo, Ui, Di, Do]
+
   implicit class ProxyKOps[I, P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](override val self: I => P[Uo, Ui, Di, Do, A]) extends Ops[I => P[Uo, Ui, Di, Do, A]] {
+
+    @inline def >=>[E](other: A => P[Uo, Ui, Di, Do, E])(implicit P: Proxy[P]): I => P[Uo, Ui, Di, Do, E] = { x => P.monad[Uo, Ui, Di, Do].bind(self(x))(other) }
+
+    @inline def <=<[E](other: E => P[Uo, Ui, Di, Do, I])(implicit P: Proxy[P]): E => P[Uo, Ui, Di, Do, A] = { x => P.monad[Uo, Ui, Di, Do].bind(other(x))(self) }
 
     @inline def >->[Ei, Eo](other: Ei => P[Di, Do, Ei, Eo, A])(implicit P: Proxy[P], ev: Di <:< I): Ei => P[Uo, Ui, Ei, Eo, A] = P.pull[Uo, Ui, Di, Do, Ei, Eo, A](self compose ev, other)
 
@@ -49,5 +69,25 @@ package object syntax extends ToMonadPlusOps with ToContravariantOps {
     @inline def hoistP[Pm[+_, -_, -_, +_, +_]](f: ProxyNaturalTransformation[P, Pm])(implicit PT: ProxyHoist[PT]): PT[Pm, Uo, Ui, Di, Do, A] = (PT.hoistP[P, Pm](f))[Uo, Ui, Di, Do, A](self)
 
   }
+
+  @inline def idP[P[+_, -_, -_, +_, +_], U, D, A](a: => A)(implicit P: Proxy[P]): P[U, D, U, D, A] = P.monad[U, D, U, D].point(a)
+
+  @inline def idPK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): A => P[U, D, U, D, A] = { x => P.monad[U, D, U, D].point(x) }
+
+  def idT[P[+_, -_, -_, +_, +_], U, D, A](a: => U)(implicit P: Proxy[P]): P[U, D, U, D, A] = {
+    val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
+    def go(x: => U): P[U, D, U, D, A] = PM.bind(PM.bind(P.request(x))(P.respondK)) { go(_) }
+    go(a)
+  }
+
+  @inline def idTK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): U => P[U, D, U, D, A] = { x => idT[P, U, D, A](x) }
+
+  def coidT[P[+_, -_, -_, +_, +_], U, D, A](a: => D)(implicit P: Proxy[P]): P[U, D, U, D, A] = {
+    val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
+    def go(x: => D): P[U, D, U, D, A] = PM.bind(PM.bind(P.respond(x))(P.requestK)) { go(_) }
+    go(a)
+  }
+
+  @inline def coidTK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): D => P[U, D, U, D, A] = { x => coidT[P, U, D, A](x) }
 
 }
