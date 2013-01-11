@@ -1,5 +1,4 @@
 package org.ptflame.pipes
-import language.higherKinds
 import scalaz.{Functor, Monad, Hoist, Need, NaturalTransformation}
 
 /**
