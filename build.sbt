@@ -23,8 +23,6 @@ scalacOptions in Compile in doc ++=  Seq(
   ,
   "-doc-version", "1.0.0"
   ,
-  "-expand-all-types"
-  ,
   "-groups"
   ,
   "-implicits"

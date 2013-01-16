@@ -1,5 +1,5 @@
 package org.ptflame.pipes
-import scala.language.implicitConversions
+import language.implicitConversions
 import scalaz.{Monad, MonadPlus}
 
 trait Proxy[P[+_, -_, -_, +_, +_]] { self =>
