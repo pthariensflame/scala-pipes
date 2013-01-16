@@ -1,7 +1,7 @@
 package org.ptflame.pipes
 import language.implicitConversions
-import scalaz.{Monad, MonadPlus}
-import scalaz.syntax.{Ops, ToMonadPlusOps, ToContravariantOps}
+import scalaz.{Monad, MonadPlus}, scalaz.Id.Id
+import scalaz.syntax.Ops
 
 package syntax {
 
@@ -97,4 +97,4 @@ package syntax {
 /**
  * Syntax for proxies.
  */
-package object syntax extends ToMonadPlusOps with ToContravariantOps with syntax0
+package object syntax extends syntax0

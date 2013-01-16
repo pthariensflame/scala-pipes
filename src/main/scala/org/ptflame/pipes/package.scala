@@ -1,13 +1,13 @@
 package org.ptflame
 import language.higherKinds
-import scalaz.IdInstances
+import scalaz.Id.Id
 
 /**
  * A fairly direct port of Gabriel Gonzalez's Haskell `pipes` library to Scala and Scalaz.
  *
  * @author Alexander Altman
  */
-package object pipes extends IdInstances with ProxyBaseTInstances {
+package object pipes extends ProxyBaseTInstances {
 
   implicit val hK: higherKinds.type = higherKinds
 

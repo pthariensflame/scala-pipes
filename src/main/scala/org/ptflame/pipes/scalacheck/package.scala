@@ -1,5 +1,5 @@
 package org.ptflame.pipes
-import scalaz.{Functor, Monad, MonadPlus, Equal, Need}
+import scalaz.{Functor, Monad, MonadPlus, Equal, Need}, scalaz.Id.Id
 import org.scalacheck.{Properties, Arbitrary, Shrink}, org.scalacheck.Prop.forAll, org.scalacheck.Gen.{sized, oneOf, fail}
 import scalaz.scalacheck.ScalazProperties.{monad, monadPlus}, scalaz.scalacheck.ScalazArbitrary.NeedArbitrary
 

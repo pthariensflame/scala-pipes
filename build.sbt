@@ -19,9 +19,9 @@ scalacOptions                   ++=  Seq(
 scalacOptions in Compile in doc ++=  Seq(
   "-diagrams"
   ,
-  "-doc-title \"scala-pipes\""
+  "-doc-title"  , "scala-pipes"
   ,
-  "-doc-version \"1.0.0\""
+  "-doc-version", "1.0.0"
   ,
   "-expand-all-types"
   ,
