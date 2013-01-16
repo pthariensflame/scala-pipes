@@ -1,10 +1,10 @@
-name                 := "scala-pipes"
+name                  := "scala-pipes"
 
-version              := "1.0.0-SNAPSHOT"
+version               := "1.0.0-SNAPSHOT"
 
-scalaVersion         := "2.10.0"
+scalaVersion          := "2.10.0"
 
-scalacOptions       ++= Seq(
+scalacOptions        ++= Seq(
   "-optimize"
   ,
   "-feature"
@@ -16,7 +16,21 @@ scalacOptions       ++= Seq(
   "-deprecation"
 )
 
-libraryDependencies ++= Seq(
+scalacOptions in doc ++= Seq(
+  "-diagrams"
+  ,
+  "-doc-title 'scala-pipes'"
+  ,
+  "-doc-version '1.0.0'"
+  ,
+  "-expand-all-types"
+  ,
+  "-groups"
+  ,
+  "-implicits"
+)
+
+libraryDependencies  ++= Seq(
   "org.scalaz"     %% "scalaz-core"               % "7.0.0-M7"
   ,
   "org.scalaz"     %% "scalaz-scalacheck-binding" % "7.0.0-M7"
