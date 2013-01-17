@@ -1,8 +1,7 @@
 package org.ptflame.pipes
-import scalaz.{Functor, Monad, MonadPlus, Equal, Need}, scalaz.Id.Id
-import org.scalacheck.{Properties, Arbitrary, Shrink}, org.scalacheck.Prop.forAll, org.scalacheck.Gen.{sized, oneOf, fail}
-import scalaz.scalacheck.ScalazProperties.{monad, monadPlus}, scalaz.scalacheck.ScalazArbitrary.NeedArbitrary
-import org.ptflame.pipes.syntax.{pointK, idK, coidK}
+import scalaz.{Functor, Need}, scalaz.Id.Id
+import org.scalacheck.{Arbitrary, Shrink}, org.scalacheck.Gen.{sized, oneOf, fail}
+import scalaz.scalacheck.ScalazArbitrary.NeedArbitrary
 
 package object scalacheck {
 
