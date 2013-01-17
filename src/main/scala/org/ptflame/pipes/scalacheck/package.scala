@@ -2,6 +2,7 @@ package org.ptflame.pipes
 import scalaz.{Functor, Monad, MonadPlus, Equal, Need}, scalaz.Id.Id
 import org.scalacheck.{Properties, Arbitrary, Shrink}, org.scalacheck.Prop.forAll, org.scalacheck.Gen.{sized, oneOf, fail}
 import scalaz.scalacheck.ScalazProperties.{monad, monadPlus}, scalaz.scalacheck.ScalazArbitrary.NeedArbitrary
+import org.ptflame.pipes.syntax.{pointK, idK, coidK}
 
 package object scalacheck {
 
@@ -22,6 +23,11 @@ package object scalacheck {
           )))
     })
 
+  implicit def proxyBaseArbitrary[Uo, Ui, Di, Do, A](implicit ArbA: Arbitrary[A], ArbUo: Arbitrary[Uo], ArbDo: Arbitrary[Do]): Arbitrary[ProxyBase[Uo, Ui, Di, Do, A]] = {
+    implicit lazy val v: Arbitrary[ProxyBase[Uo, Ui, Di, Do, A]] = proxyBaseTArbitrary[Uo, Ui, Di, Do, Id, A]
+    v
+  }
+
   /**
    * Not `implicit` because of recursion.
    */
@@ -31,49 +37,10 @@ package object scalacheck {
     case Wrap(m) => SkMP.shrink(M.map(m) { x => (x: ProxyBaseT[Uo, Ui, Di, Do, M, A]) }).map { Wrap(_) }
     case Pure(r) => SkA.shrink(r.value).map { x => Pure[M, A](Need(x)) }
   }
-  
-  implicit def proxyBaseArbitrary[Uo, Ui, Di, Do, A](implicit ArbA: Arbitrary[A], ArbUo: Arbitrary[Uo], ArbDo: Arbitrary[Do]): Arbitrary[ProxyBase[Uo, Ui, Di, Do, A]] = {
-    implicit lazy val v: Arbitrary[ProxyBase[Uo, Ui, Di, Do, A]] = proxyBaseTArbitrary[Uo, Ui, Di, Do, Id, A]
-    v
-  }
 
   implicit def proxyBaseShrink[Uo, Ui, Di, Do, A](implicit SkA: Shrink[A], SkUo: Shrink[Uo], SkDo: Shrink[Do]): Shrink[ProxyBase[Uo, Ui, Di, Do, A]] = {
     implicit lazy val v: Shrink[ProxyBase[Uo, Ui, Di, Do, A]] = proxyBaseTShrink[Uo, Ui, Di, Do, Id, A]
     v
-  }
-
-}
-
-package scalacheck {
-
-  trait ProxyProperties[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do] { this: Properties =>
-
-    implicit val P: Proxy[P]
-
-    implicit val PM: Monad[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f] = P.monad[Uo, Ui, Di, Do]
-
-    implicit def ArbP[A]: Arbitrary[P[Uo, Ui, Di, Do, A]]
-
-    implicit def EqP[A]: Equal[P[Uo, Ui, Di, Do, A]]
-    
-    include(monad.laws[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f])
-
-  }
-
-  trait ProxyPlusProperties[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do] extends ProxyProperties[P, Uo, Ui, Di, Do] { this: Properties =>
-
-    implicit override val P: ProxyPlus[P]
-
-    implicit override val PM: MonadPlus[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f] = P.monad[Uo, Ui, Di, Do]
-
-    include(monadPlus.laws[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f])
-
-  }
-
-  trait InteractProperties[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do] extends ProxyProperties[P, Uo, Ui, Di, Do] { this: Properties =>
-
-    implicit override val P: Interact[P]
-
   }
 
 }
