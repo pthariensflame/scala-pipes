@@ -43,3 +43,9 @@ package object scalacheck {
   }
 
 }
+
+package scalacheck {
+
+  
+
+}
