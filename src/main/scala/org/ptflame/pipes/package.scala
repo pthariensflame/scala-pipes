@@ -13,26 +13,70 @@ package object pipes extends ProxyBaseTInstances {
 
   type ProxyBase[+Uo, -Ui, -Di, +Do, +A] = ProxyBaseT[Uo, Ui, Di, Do, Id, A]
 
+  type ProxyBaseP[M[_]] = {
+    type p[+Uo, -Ui, -Di, +Do, +A] = ProxyBaseT[Uo, Ui, Di, Do, M, A]
+  }
+
   object ProxyBase extends ProxyBaseTInstances
 
-  @inline def pointP[P[+_, -_, -_, +_, +_], U, D, A](a: => A)(implicit P: Proxy[P]): P[U, D, U, D, A] = P.monad[U, D, U, D].point(a)
+  type Pipe[+P[+_, -_, -_, +_, +_], -Ui, +Do, +A] = P[Unit, Ui, Unit, Do, A]
 
-  def pointK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): A => P[U, D, U, D, A] = { x => P.monad[U, D, U, D].point(x) }
-
-  def idP[P[+_, -_, -_, +_, +_], U, D, A](a: => U)(implicit P: Proxy[P]): P[U, D, U, D, A] = {
-    val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
-    def go(x: => U): P[U, D, U, D, A] = PM.bind(PM.bind(P.request(x))(P.respondK)) { go(_) }
-    go(a)
+  type PipeP[P[+_, -_, -_, +_, +_]] = {
+    type p[-Ui, +Do, +A] = Pipe[P, Ui, Do, A]
   }
 
-  def idK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): U => P[U, D, U, D, A] = { x => idP[P, U, D, A](x) }
+  type Copipe[+P[+_, -_, -_, +_, +_], +Uo, -Di, +A] = P[Uo, Unit, Di, Unit, A]
 
-  def coidP[P[+_, -_, -_, +_, +_], U, D, A](a: => D)(implicit P: Proxy[P]): P[U, D, U, D, A] = {
-    val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
-    def go(x: => D): P[U, D, U, D, A] = PM.bind(PM.bind(P.respond(x))(P.requestK)) { go(_) }
-    go(a)
+  type CopipeP[P[+_, -_, -_, +_, +_]] = {
+    type p[+Uo, -Di, +A] = Copipe[P, Uo, Di, A]
   }
 
-  def coidK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): D => P[U, D, U, D, A] = { x => coidP[P, U, D, A](x) }
+  type Producer[+P[+_, -_, -_, +_, +_], +Do, +A] = P[Nothing, Unit, Unit, Do, A]
+
+  type ProducerP[P[+_, -_, -_, +_, +_]] = {
+    type p[+Do, +A] = Producer[P, Do, A]
+  }
+
+  type Coproducer[+P[+_, -_, -_, +_, +_], +Uo, +A] = P[Uo, Unit, Unit, Nothing, A]
+
+  type CoproducerP[P[+_, -_, -_, +_, +_]] = {
+    type p[+Uo, +A] = Coproducer[P, Uo, A]
+  }
+
+  type Consumer[+P[+_, -_, -_, +_, +_], -Ui, +A] = P[Unit, Ui, Unit, Nothing, A]
+
+  type ConsumerP[P[+_, -_, -_, +_, +_]] = {
+    type p[-Ui, +A] = Consumer[P, Ui, A]
+  }
+
+  type Coconsumer[+P[+_, -_, -_, +_, +_], -Di, +A] = P[Nothing, Unit, Di, Unit, A]
+
+  type CoconsumerP[P[+_, -_, -_, +_, +_]] = {
+    type p[-Di, +A] = Coconsumer[P, Di, A]
+  }
+
+  type Client[+P[+_, -_, -_, +_, +_], +Uo, -Ui, +A] = P[Uo, Ui, Unit, Nothing, A]
+
+  type ClientP[P[+_, -_, -_, +_, +_]] = {
+    type p[+Uo, -Ui, +A] = Client[P, Uo, Ui, A]
+  }
+
+  type Server[+P[+_, -_, -_, +_, +_], -Di, +Do, +A] = P[Nothing, Unit, Di, Do, A]
+
+  type ServerP[P[+_, -_, -_, +_, +_]] = {
+    type p[-Di, +Do, +A] = Server[P, Di, Do, A]
+  }
+
+  type Session[+P[+_, -_, -_, +_, +_], +A] = P[Nothing, Unit, Unit, Nothing, A]
+
+  type SessionP[P[+_, -_, -_, +_, +_]] = {
+    type p[+A] = Session[P, A]
+  }
+
+  type Pipeline[+P[+_, -_, -_, +_, +_], +A] = P[Nothing, Unit, Unit, Nothing, A]
+
+  type PipelineP[P[+_, -_, -_, +_, +_]] = {
+    type p[+A] = Pipeline[P, A]
+  }
 
 }
