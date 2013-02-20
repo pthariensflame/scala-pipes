@@ -16,6 +16,8 @@ final case class IdentityP[P[+_, -_, -_, +_, +_], +Uo, -Ui, -Di, +Do, +A](run: P
 
   @inline def flatten[Uo1 >: Uo, Ui1 <: Ui, Di1 <: Di, Do1 >: Do, B](implicit P: Proxy[P], ev: A <:< IdentityP[P, Uo1, Ui1, Di1, Do1, B]): IdentityP[P, Uo1, Ui1, Di1, Do1, B] = this.flatMap[Uo1, Ui1, Di1, Do1, B](ev)(P)
 
+  def hoistP[Uo1 >: Uo, Ui1 <: Ui, Di1 <: Di, Do1 >: Do, A1 >: A, Q[+_, -_, -_, +_, +_]](f: ProxyNaturalTransformation[P, Q]): IdentityP[Q, Uo1, Ui1, Di1, Do1, A1] = IdentityP(f(this.run))
+
 }
 
 object IdentityP extends IdentityPInstances

@@ -68,6 +68,16 @@ sealed abstract class ProxyBaseT[+Uo, -Ui, -Di, +Do, M[_], +A]() {
 
   @inline def flatten[Uo1 >: Uo, Ui1 <: Ui, Di1 <: Di, Do1 >: Do, B](implicit M: Functor[M], ev: A <:< ProxyBaseT[Uo1, Ui1, Di1, Do1, M, B]): ProxyBaseT[Uo1, Ui1, Di1, Do1, M, B] = this.flatMap[Uo1, Ui1, Di1, Do1, B](ev)(M)
 
+  def hoist[Uo1 >: Uo, Ui1 <: Ui, Di1 <: Di, Do1 >: Do, A1 >: A, N[_]](f: NaturalTransformation[M, N])(implicit M: Monad[M]): ProxyBaseT[Uo1, Ui1, Di1, Do1, N, A1] = {
+      def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo1, Ui1, Di1, Do1, N, A1] = p match {
+        case r@Request(_, fUi) => r.copy(next=((x: Ui1) => go(fUi(x))))
+        case r@Respond(_, fDi) => r.copy(next=((x: Di1) => go(fDi(x))))
+        case Wrap(m) => Wrap(f(M.map(m) { go(_) }))
+        case Pure(r) => Pure(r)
+      }
+      go(this.observe(M))
+  }
+
 }
 
 private[pipes] final case class Request[Uo, Ui, Di, Do, M[_], A](get: Need[Uo], next: Ui => ProxyBaseT[Uo, Ui, Di, Do, M, A]) extends ProxyBaseT[Uo, Ui, Di, Do, M, A]()
@@ -176,15 +186,7 @@ private[pipes] sealed trait ProxyBaseTHoist[Uo, Ui, Di, Do] extends Hoist[({ typ
 
   override def hoist[M[_], N[_]](f: NaturalTransformation[M, N])(implicit M: Monad[M]): NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] = new NaturalTransformation[({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, M, a] })#f, ({ type f[+a] = ProxyBaseT[Uo, Ui, Di, Do, N, a] })#f] {
 
-    override def apply[A](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, N, A] = {
-      def go(p: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, N, A] = p match {
-        case r@Request(_, fUi) => r.copy(next=((x: Ui) => go(fUi(x))))
-        case r@Respond(_, fDi) => r.copy(next=((x: Di) => go(fDi(x))))
-        case Wrap(m) => Wrap(f(M.map(m) { go(_) }))
-        case Pure(r) => Pure(r)
-      }
-      go(fa.observe)
-    }
+    override def apply[A](fa: ProxyBaseT[Uo, Ui, Di, Do, M, A]): ProxyBaseT[Uo, Ui, Di, Do, N, A] = fa.hoist[Uo, Ui, Di, Do, A, N](f)
 
   }
 
