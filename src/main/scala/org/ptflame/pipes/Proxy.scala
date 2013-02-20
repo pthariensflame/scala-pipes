@@ -102,9 +102,25 @@ object Proxy {
 
   @inline def requestK[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit P: Proxy[P]): Uo => P[Uo, Ui, Di, Do, Ui] = P.requestK[Uo, Ui, Di, Do]
 
+  @inline def awaiting[P[+_, -_, -_, +_, +_], Ui, Do](implicit P: Proxy[P]): Pipe[P, Ui, Do, Ui] = P.request[Unit, Ui, Unit, Do](())
+
+  def awaitingK[P[+_, -_, -_, +_, +_], Ui, Do](implicit P: Proxy[P]): Unit => Pipe[P, Ui, Do, Ui] = { _ => awaiting[P, Ui, Do](P) }
+
+  @inline def coyielding[P[+_, -_, -_, +_, +_], Uo, Di](a: => Uo)(implicit P: Proxy[P]): Copipe[P, Uo, Di, Unit] = P.request[Uo, Unit, Di, Unit](a)
+
+  def coyieldingK[P[+_, -_, -_, +_, +_], Uo, Di](implicit P: Proxy[P]): Uo => Copipe[P, Uo, Di, Unit] = { x => coyielding[P, Uo, Di](x)(P) }
+
   @inline def respond[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](a: => Do)(implicit P: Proxy[P]): P[Uo, Ui, Di, Do, Di] = P.respond[Uo, Ui, Di, Do](a)
 
   @inline def respondK[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit P: Proxy[P]): Do => P[Uo, Ui, Di, Do, Di] = P.respondK[Uo, Ui, Di, Do]
+
+  @inline def coawaiting[P[+_, -_, -_, +_, +_], Uo, Di](implicit P: Proxy[P]): Copipe[P, Uo, Di, Di] = P.respond[Uo, Unit, Di, Unit](())
+
+  def coawaitingK[P[+_, -_, -_, +_, +_], Uo, Di](implicit P: Proxy[P]): Unit => Copipe[P, Uo, Di, Di] = { _ => coawaiting[P, Uo, Di](P) }
+
+  @inline def yielding[P[+_, -_, -_, +_, +_], Ui, Do](a: => Do)(implicit P: Proxy[P]): Pipe[P, Ui, Do, Unit] = P.respond[Unit, Ui, Unit, Do](a)
+
+  def yieldingK[P[+_, -_, -_, +_, +_], Ui, Do](implicit P: Proxy[P]): Do => Pipe[P, Ui, Do, Unit] = { x => yielding[P, Ui, Do](x)(P) }
 
   @inline def requests[P[+_, -_, -_, +_, +_], Uo](xs: GenTraversableOnce[Uo])(implicit P: Proxy[P]): Coproducer[P, Uo, Unit] = P.requests[Uo](xs)
 
