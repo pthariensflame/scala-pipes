@@ -11,8 +11,6 @@ package object pipes extends ProxyBaseTInstances {
 
   implicit val hK: higherKinds.type = higherKinds
 
-  type InteractHoist[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]] = InteractTrans[PT] with ProxyHoist[PT]
-
   type ProxyBase[+Uo, -Ui, -Di, +Do, +A] = ProxyBaseT[Uo, Ui, Di, Do, Id, A]
 
   type ProxyBaseP[M[_]] = {

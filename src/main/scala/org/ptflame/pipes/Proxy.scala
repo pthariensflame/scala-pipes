@@ -244,6 +244,18 @@ object ProxyTrans {
 
 }
 
+trait InteractTrans[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]] extends ProxyTrans[PT] {
+
+  implicit def interact[P[+_, -_, -_, +_, +_]](implicit P: Interact[P]): Interact[({ type f[+uO, -uI, -dI, +dO, +a] = PT[P, uO, uI, dI, dO, a] })#f]
+
+}
+
+object InteractTrans {
+
+  @inline def apply[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]](implicit PT: InteractTrans[PT]): InteractTrans[PT] = PT
+
+}
+
 trait ProxyNaturalTransformation[-P1[+_, -_, -_, +_, +_], +P2[+_, -_, -_, +_, +_]] {
 
   def apply[Uo, Ui, Di, Do, A](p: P1[Uo, Ui, Di, Do, A]): P2[Uo, Ui, Di, Do, A]
@@ -268,14 +280,10 @@ object ProxyHoist {
 
 }
 
-trait InteractTrans[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]] extends ProxyTrans[PT] {
+trait InteractHoist[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]] extends InteractTrans[PT] with ProxyHoist[PT]
 
-  implicit def interact[P[+_, -_, -_, +_, +_]](implicit P: Interact[P]): Interact[({ type f[+uO, -uI, -dI, +dO, +a] = PT[P, uO, uI, dI, dO, a] })#f]
+object InteractHoist {
 
-}
-
-object InteractTrans {
-
-  @inline def apply[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]](implicit PT: InteractTrans[PT]): InteractTrans[PT] = PT
+  @inline def apply[PT[_[+_, -_, -_, +_, +_], +_, -_, -_, +_, +_]](implicit PT: InteractHoist[PT]): InteractHoist[PT] = PT
 
 }
