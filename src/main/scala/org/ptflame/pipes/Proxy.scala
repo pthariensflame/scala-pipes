@@ -129,7 +129,7 @@ object Proxy {
     go(a)
   }
 
-  def takeWhileDK[P[+_, -_, -_, +_, +_], U, D](f: D => Boolean)(implicit P: Proxy[P]): U => P[U, D, U, D, Unit] = { x => takeWhileDP(x)(f)(P) }
+  def takeWhileDK[P[+_, -_, -_, +_, +_], U, D](f: D => Boolean)(implicit P: Proxy[P]): U => P[U, D, U, D, Unit] = { x => takeWhileDP[P, U, D](x)(f)(P) }
 
   def takeWhileUP[P[+_, -_, -_, +_, +_], U, D](a: => U)(f: U => Boolean)(implicit P: Proxy[P]): P[U, D, U, D, Unit] = {
     val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
@@ -137,23 +137,39 @@ object Proxy {
     go(a)
   }
 
-  def takeWhileUK[P[+_, -_, -_, +_, +_], U, D](f: U => Boolean)(implicit P: Proxy[P]): U => P[U, D, U, D, Unit] = { x => takeWhileUP(x)(f)(P) }
+  def takeWhileUK[P[+_, -_, -_, +_, +_], U, D](f: U => Boolean)(implicit P: Proxy[P]): U => P[U, D, U, D, Unit] = { x => takeWhileUP[P, U, D](x)(f)(P) }
 
   def dropDP[P[+_, -_, -_, +_, +_], D, A](i: Int)(implicit P: Proxy[P]): Pipe[P, D, D, A] = {
     val PM: Monad[({ type f[+a] = Pipe[P, D, D, a] })#f] = P.monad[Unit, D, Unit, D]
-    def go(n: Int): Pipe[P, D, D, A] = if (n <= 0) idP[P, Unit, D, A](()) else PM.bind[D, A](P.request(())) { _ => go((n - 1)) }
+    def go(n: Int): Pipe[P, D, D, A] = if (n <= 0) idP[P, Unit, D, A](())(P) else PM.bind[D, A](P.request(())) { _ => go((n - 1)) }
     go(i)
   }
 
-  def dropDK[P[+_, -_, -_, +_, +_], D, A](i: Int)(implicit P: Proxy[P]): Unit => Pipe[P, D, D, A] = { _ => dropDP(i)(P) }
+  def dropDK[P[+_, -_, -_, +_, +_], D, A](i: Int)(implicit P: Proxy[P]): Unit => Pipe[P, D, D, A] = { _ => dropDP[P, D, A](i)(P) }
 
   def dropUP[P[+_, -_, -_, +_, +_], U, A](a: => U)(i: Int)(implicit P: Proxy[P]): Copipe[P, U, U, A] = {
     val PM: Monad[({ type f[+a] = Copipe[P, U, U, a] })#f] = P.monad[U, Unit, U, Unit]
-    def go(n: Int, x: => U): Copipe[P, U, U, A] = if (n <= 0) idP[P, U, Unit, A](x) else PM.bind[U, A](P.respond(x)) { x2 => go((n - 1), x2) }
+    def go(n: Int, x: => U): Copipe[P, U, U, A] = if (n <= 0) idP[P, U, Unit, A](x)(P) else PM.bind[U, A](P.respond(x)) { x2 => go((n - 1), x2) }
     go(i, a)
   }
 
-  def dropUK[P[+_, -_, -_, +_, +_], U, A](i: Int)(implicit P: Proxy[P]): U => Copipe[P, U, U, A] = { x => dropUP(x)(i)(P) }
+  def dropUK[P[+_, -_, -_, +_, +_], U, A](i: Int)(implicit P: Proxy[P]): U => Copipe[P, U, U, A] = { x => dropUP[P, U, A](x)(i)(P) }
+
+  def dropWhileDP[P[+_, -_, -_, +_, +_], D, A](f: D => Boolean)(implicit P: Proxy[P]): Pipe[P, D, D, A] = {
+    val PM: Monad[({ type f[+a] = Pipe[P, D, D, a] })#f] = P.monad[Unit, D, Unit, D]
+    lazy val go: Pipe[P, D, D, A] = PM.bind(P.request(())) { v => if (f(v)) go else PM.bind(P.respond(v))(idK(P)) }
+    go
+  }
+
+  def dropWhileDK[P[+_, -_, -_, +_, +_], D, A](f: D => Boolean)(implicit P: Proxy[P]): Unit => Pipe[P, D, D, A] = { _ => dropWhileDP[P, D, A](f)(P) }
+
+  def dropWhileUP[P[+_, -_, -_, +_, +_], U, A](a: => U)(f: U => Boolean)(implicit P: Proxy[P]): Copipe[P, U, U, A] = {
+    val PM: Monad[({ type f[+a] = Copipe[P, U, U, a] })#f] = P.monad[U, Unit, U, Unit]
+    def go(x: => U): Copipe[P, U, U, A] = if (f(a)) PM.bind(P.respond(())) { go(_) } else idP(x)(P)
+    go(a)
+  }
+
+  def dropWhileUK[P[+_, -_, -_, +_, +_], U, A](f: U => Boolean)(implicit P: Proxy[P]): U => Copipe[P, U, U, A] = { x => dropWhileUP(x)(f)(P) }
 
 }
 
