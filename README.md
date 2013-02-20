@@ -15,3 +15,5 @@ There is one base `Proxy`, `ProxyBaseT`, which is a `Monad` transformer in addit
  - `EitherP` (not implemented yet)
  - `MaybeP` (not implemented yet)
  - `TryP` (not implemented yet)
+ 
+ *scala-pipes* currently depends on *scalaz-7.0.0-M8*.
