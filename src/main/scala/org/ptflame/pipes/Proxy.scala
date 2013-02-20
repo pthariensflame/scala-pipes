@@ -1,5 +1,6 @@
 package org.ptflame.pipes
 import language.implicitConversions
+import scala.collection.GenTraversableOnce
 import scalaz.{Monad, MonadPlus}
 
 trait Proxy[P[+_, -_, -_, +_, +_]] { self =>
@@ -17,11 +18,25 @@ trait Proxy[P[+_, -_, -_, +_, +_]] { self =>
 
   def request[Uo, Ui, Di, Do](uO: => Uo): P[Uo, Ui, Di, Do, Ui]
 
-  final def requestK[Uo, Ui, Di, Do]: Uo => P[Uo, Ui, Di, Do, Ui] = { self.request(_) }
+  final def requestK[Uo, Ui, Di, Do]: Uo => P[Uo, Ui, Di, Do, Ui] = { self.request[Uo, Ui, Di, Do](_) }
 
   def respond[Uo, Ui, Di, Do](dO: => Do): P[Uo, Ui, Di, Do, Di]
 
-  final def respondK[Uo, Ui, Di, Do]: Do => P[Uo, Ui, Di, Do, Di] = { self.respond(_) }
+  final def respondK[Uo, Ui, Di, Do]: Do => P[Uo, Ui, Di, Do, Di] = { self.respond[Uo, Ui, Di, Do](_) }
+
+  final def requests[Uo](xs: GenTraversableOnce[Uo])(implicit P: Proxy[P]): Coproducer[P, Uo, Unit] = {
+    val PM: Monad[({ type f[+a] = Coproducer[P, Uo, a] })#f] = self.monad[Uo, Unit, Unit, Nothing]
+    xs.foldRight[Coproducer[P, Uo, Unit]](PM.point[Unit](())) { (e: Uo, a: Coproducer[P, Uo, Unit]) => PM.bind[Unit, Unit](self.request(e)) { _ => a } }
+  }
+
+  final def requestsK[Uo](xs: GenTraversableOnce[Uo])(implicit P: Proxy[P]): Unit => Coproducer[P, Uo, Unit] = { _ => self.requests[Uo](xs) }
+
+  final def responds[Do](xs: GenTraversableOnce[Do])(implicit P: Proxy[P]): Producer[P, Do, Unit] = {
+    val PM: Monad[({ type f[+a] = Producer[P, Do, a] })#f] = self.monad[Nothing, Unit, Unit, Do]
+    xs.foldRight[Producer[P, Do, Unit]](PM.point[Unit](())) { (e: Do, a: Producer[P, Do, Unit]) => PM.bind[Unit, Unit](self.respond(e)) { _ => a } }
+  }
+
+  final def respondsK[Do](xs: GenTraversableOnce[Do])(implicit P: Proxy[P]): Unit => Producer[P, Do, Unit] = { _ => self.responds[Do](xs) }
 
   /**
    * Compose two proxies blocked on a `respond`, generating a new proxy blocked on a `respond`.  Begins from the downstream end and satisfies every `request` with a `respond`.
@@ -82,6 +97,22 @@ object Proxy {
   }
 
   def coidK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): D => P[U, D, U, D, A] = { x => coidP[P, U, D, A](x)(P) }
+
+  @inline def request[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](a: => Uo)(implicit P: Proxy[P]): P[Uo, Ui, Di, Do, Ui] = P.request[Uo, Ui, Di, Do](a)
+
+  @inline def requestK[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit P: Proxy[P]): Uo => P[Uo, Ui, Di, Do, Ui] = P.requestK[Uo, Ui, Di, Do]
+
+  @inline def respond[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](a: => Do)(implicit P: Proxy[P]): P[Uo, Ui, Di, Do, Di] = P.respond[Uo, Ui, Di, Do](a)
+
+  @inline def respondK[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit P: Proxy[P]): Do => P[Uo, Ui, Di, Do, Di] = P.respondK[Uo, Ui, Di, Do]
+
+  @inline def requests[P[+_, -_, -_, +_, +_], Uo](xs: GenTraversableOnce[Uo])(implicit P: Proxy[P]): Coproducer[P, Uo, Unit] = P.requests[Uo](xs)
+
+  @inline def requestsK[P[+_, -_, -_, +_, +_], Uo](xs: GenTraversableOnce[Uo])(implicit P: Proxy[P]): Unit => Coproducer[P, Uo, Unit] = P.requestsK[Uo](xs)
+
+  @inline def responds[P[+_, -_, -_, +_, +_], Do](xs: GenTraversableOnce[Do])(implicit P: Proxy[P]): Producer[P, Do, Unit] = P.responds[Do](xs)
+
+  @inline def respondsK[P[+_, -_, -_, +_, +_], Do](xs: GenTraversableOnce[Do])(implicit P: Proxy[P]): Unit => Producer[P, Do, Unit] = P.respondsK[Do](xs)
 
   def mapDP[P[+_, -_, -_, +_, +_], Ui, Do, X, A](v: => X)(f: Ui => Do)(implicit P: Proxy[P]): P[X, Ui, X, Do, A] = {
     val PM: Monad[({ type f[+a] = P[X, Ui, X, Do, a] })#f] = P.monad[X, Ui, X, Do]

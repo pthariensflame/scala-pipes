@@ -1,5 +1,6 @@
 package org.ptflame.pipes
 import language.implicitConversions
+import scala.collection.GenTraversableOnce
 import scalaz.syntax.Ops
 
 package syntax {
@@ -44,6 +45,14 @@ package syntax {
       @inline def request[P[+_, -_, -_, +_, +_], Ui, Di, Do](implicit P: Proxy[P]): P[T, Ui, Di, Do, Ui] = P.request[T, Ui, Di, Do](self)
 
       @inline def respond[P[+_, -_, -_, +_, +_], Uo, Ui, Di](implicit P: Proxy[P]): P[Uo, Ui, Di, T, Di] = P.respond[Uo, Ui, Di, T](self)
+
+      @inline def requests[P[+_, -_, -_, +_, +_], Uo](implicit P: Proxy[P], ev: T <:< GenTraversableOnce[Uo]): Coproducer[P, Uo, Unit] = P.requests[Uo](ev(self))
+
+      @inline def requestsK[P[+_, -_, -_, +_, +_], Uo](implicit P: Proxy[P], ev: T <:< GenTraversableOnce[Uo]): Unit => Coproducer[P, Uo, Unit] = P.requestsK[Uo](ev(self))
+
+      @inline def responds[P[+_, -_, -_, +_, +_], Do](implicit P: Proxy[P], ev: T <:< GenTraversableOnce[Do]): Producer[P, Do, Unit] = P.responds[Do](ev(self))
+
+      @inline def respondsK[P[+_, -_, -_, +_, +_], Do](implicit P: Proxy[P], ev: T <:< GenTraversableOnce[Do]): Unit => Producer[P, Do, Unit] = P.respondsK[Do](ev(self))
 
     }
 
