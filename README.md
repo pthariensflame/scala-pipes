@@ -5,4 +5,4 @@ scala-pipes
 
 The design of *scala-pipes* revolves around a central, polymorphic abstraction:  `Proxy`, implemented as a type class.  All instances of `Proxy` can be treated as a kind of bidirectional enumerator, iteratee, or enumeratee.  There is only one type (per `Proxy` transformer), similar to an enumeratee, and enumerator- and iteratee-equivalents are simply type synonyms over the type in question, themselves inherently polymorphic over the underlying `Proxy`.
 
-There is one base `Proxy`, `ProxyBaseT`, which is a `MonadTrans`former in addition to being a `Proxy`.  Layerable on top of any other `Proxy` are various `ProxyTrans`formers (So far, only `IdentityP` has been implemented, but more are on the way).
+There is one base `Proxy`, `ProxyBaseT`, which is a `Monad` transformer in addition to being a `Proxy`.  Layerable on top of any other `Proxy` are various `Proxy` transformers (So far, only `IdentityP` has been implemented, but more are on the way).
