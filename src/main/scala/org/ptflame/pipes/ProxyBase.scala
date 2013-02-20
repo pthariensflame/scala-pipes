@@ -80,7 +80,7 @@ private[pipes] final case class Pure[M[_], A](get: Need[A]) extends ProxyBaseT[N
 
 object ProxyBaseT extends ProxyBaseTInstances
 
-trait ProxyBaseTInstances {
+private[pipes] trait ProxyBaseTInstances {
 
   implicit def ProxyBaseTInteract[M[_]](implicit Mx: Functor[M]): Interact[({ type f[+uO, -uI, -dI, +dO, +a] = ProxyBaseT[uO, uI, dI, dO, M, a] })#f] = new ProxyBaseTInteract[M] {
 
