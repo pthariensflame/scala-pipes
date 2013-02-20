@@ -22,8 +22,14 @@ final case class IdentityP[P[+_, -_, -_, +_, +_], +Uo, -Ui, -Di, +Do, +A](run: P
 
 object IdentityP extends IdentityPInstances
 
-private[trans] trait IdentityPInstances {
+trait IdentityPInstances0 {
 
   
+
+}
+
+trait IdentityPInstances {
+
+  //implicit def IdentityP
 
 }
