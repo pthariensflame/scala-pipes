@@ -9,3 +9,9 @@ There is one base `Proxy`, `ProxyBaseT`, which is a `Monad` transformer in addit
 
  - `IdentityP`
  - `ReaderP`
+ - `IndexedStateP` (not implemented yet)
+ - `WriterP` (not implemented yet)
+ - `IndexedReaderWriterStateP` (not implemented yet)
+ - `EitherP` (not implemented yet)
+ - `MaybeP` (not implemented yet)
+ - `TryP` (not implemented yet)
