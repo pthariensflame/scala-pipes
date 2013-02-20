@@ -65,7 +65,7 @@ object Proxy {
 
   @inline def pointP[P[+_, -_, -_, +_, +_], U, D, A](a: => A)(implicit P: Proxy[P]): P[U, D, U, D, A] = P.monad[U, D, U, D].point(a)
 
-  def pointK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): A => P[U, D, U, D, A] = { x => P.monad[U, D, U, D].point(x) }
+  def pointK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): A => P[U, D, U, D, A] = { x => pointP[P, U, D, A](x)(P) }
 
   def idP[P[+_, -_, -_, +_, +_], U, D, A](a: => U)(implicit P: Proxy[P]): P[U, D, U, D, A] = {
     val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
@@ -73,7 +73,7 @@ object Proxy {
     go(a)
   }
 
-  def idK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): U => P[U, D, U, D, A] = { x => idP[P, U, D, A](x) }
+  def idK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): U => P[U, D, U, D, A] = { x => idP[P, U, D, A](x)(P) }
 
   def coidP[P[+_, -_, -_, +_, +_], U, D, A](a: => D)(implicit P: Proxy[P]): P[U, D, U, D, A] = {
     val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
@@ -81,7 +81,31 @@ object Proxy {
     go(a)
   }
 
-  def coidK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): D => P[U, D, U, D, A] = { x => coidP[P, U, D, A](x) }
+  def coidK[P[+_, -_, -_, +_, +_], U, D, A](implicit P: Proxy[P]): D => P[U, D, U, D, A] = { x => coidP[P, U, D, A](x)(P) }
+
+  def mapDP[P[+_, -_, -_, +_, +_], Ui, Do, X, A](v: => X)(f: Ui => Do)(implicit P: Proxy[P]): P[X, Ui, X, Do, A] = {
+    val PM: Monad[({ type f[+a] = P[X, Ui, X, Do, a] })#f] = P.monad[X, Ui, X, Do]
+    def go(x: => X): P[X, Ui, X, Do, A] = PM.bind(PM.bind(P.request(x)) { a => P.respond(f(a)) }) { go(_) }
+    go(v)
+  }
+
+  def mapDK[P[+_, -_, -_, +_, +_], Ui, Do, X, A](f: Ui => Do)(implicit P: Proxy[P]): X => P[X, Ui, X, Do, A] = { x => mapDP[P, Ui, Do, X, A](x)(f)(P) }
+
+  def mapUP[P[+_, -_, -_, +_, +_], Uo, Di, X, A](v: => Di)(g: Di => Uo)(implicit P: Proxy[P]): P[Uo, X, Di, X, A] = {
+    val PM: Monad[({ type f[+a] = P[Uo, X, Di, X, a] })#f] = P.monad[Uo, X, Di, X]
+    def go(x: => Di): P[Uo, X, Di, X, A] = PM.bind(PM.bind(P.request(g(x)))(P.respondK)) { go(_) }
+    go(v)
+  }
+
+  def mapUK[P[+_, -_, -_, +_, +_], Uo, Di, X, A](g: Di => Uo)(implicit P: Proxy[P]): Di => P[Uo, X, Di, X, A] = { x => mapUP[P, Uo, Di, X, A](x)(g)(P) }
+
+  def bimapP[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](v: => Di)(f: Ui => Do, g: Di => Uo)(implicit P: Proxy[P]): P[Uo, Ui, Di, Do, A] = {
+    val PM: Monad[({ type f[+a] = P[Uo, Ui, Di, Do, a] })#f] = P.monad[Uo, Ui, Di, Do]
+    def go(x: => Di): P[Uo, Ui, Di, Do, A] = PM.bind(PM.bind(P.request(g(x))) { a => P.respond(f(a)) }) { go(_) }
+    go(v)
+  }
+
+  def bimapK[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](f: Ui => Do, g: Di => Uo)(implicit P: Proxy[P]): Di => P[Uo, Ui, Di, Do, A] = { x => bimapP[P, Uo, Ui, Di, Do, A](x)(f, g)(P) }
 
 }
 
