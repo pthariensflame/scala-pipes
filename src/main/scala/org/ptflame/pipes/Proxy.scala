@@ -107,6 +107,18 @@ object Proxy {
 
   def bimapK[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](f: Ui => Do, g: Di => Uo)(implicit P: Proxy[P]): Di => P[Uo, Ui, Di, Do, A] = { x => bimapP[P, Uo, Ui, Di, Do, A](x)(f, g)(P) }
 
+  def takeB[P[+_, -_, -_, +_, +_], U, D](i: Int)(a: => U)(implicit P: Proxy[P]): P[U, D, U, D, U] = {
+    val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
+    def go(n: Int, x: => U): P[U, D, U, D, U] = if (n <= 0) PM.point[U](x) else PM.bind(PM.bind(P.request(x))(P.respondK)) { x2 => go((n - 1), x2) }
+    go(i, a)
+  }
+
+  def takeB_[P[+_, -_, -_, +_, +_], U, D](i: Int)(a: => U)(implicit P: Proxy[P]): P[U, D, U, D, Unit] = {
+    val PM: Monad[({ type f[+a] = P[U, D, U, D, a] })#f] = P.monad[U, D, U, D]
+    def go(n: Int, x: => U): P[U, D, U, D, Unit] = if (n <= 0) PM.point[Unit](()) else PM.bind(PM.bind(P.request(x))(P.respondK)) { x2 => go((n - 1), x2) }
+    go(i, a)
+  }
+
 }
 
 trait ProxyPlus[P[+_, -_, -_, +_, +_]] extends Proxy[P] {
