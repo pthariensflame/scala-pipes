@@ -14,6 +14,16 @@ scalacOptions                   ++=  Seq(
   "-explaintypes"
   ,
   "-deprecation"
+  ,
+  "-Xlint"
+  ,
+  "-Xmigration"
+  ,
+  "-Xverify"
+  ,
+  "-Ywarn-all"
+  ,
+  "-Yinline-warnings"
 )
 
 scalacOptions in Compile in doc ++=  Seq(
@@ -24,6 +34,8 @@ scalacOptions in Compile in doc ++=  Seq(
   "-groups"
   ,
   "-implicits"
+  ,
+  "-implicits-sound-shadowing"
 )
 
 libraryDependencies             ++=  Seq(
