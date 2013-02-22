@@ -59,7 +59,7 @@ package syntax {
 
     implicit class CoPipeV[I, O](override val self: I => O) extends Ops[I => O] {
 
-      @inline def pipe[P[+_, -_, -_, +_, +_], A](implicit P: Proxy[P]): Pipe[P, I, O, A] = {
+      def pipe[P[+_, -_, -_, +_, +_], A](implicit P: Proxy[P]): Pipe[P, I, O, A] = {
         val PM: Monad[({ type f[+a] = Pipe[P, I, O, a] })#f] = P.monad[Unit, I, Unit, O]
         lazy val go: Pipe[P, I, O, A] = PM.bind(PM.bind(P.request(()))(self andThen P.respondK[Unit, I, Unit, O] )) { _ => go }
         go
@@ -67,7 +67,7 @@ package syntax {
 
       def pipeK[P[+_, -_, -_, +_, +_], A](implicit P: Proxy[P]): Unit => Pipe[P, I, O, A] = { _ => this.pipe[P, A](P) }
 
-      @inline def copipe[P[+_, -_, -_, +_, +_], A](implicit P: Proxy[P]): Copipe[P, O, I, A] = {
+      def copipe[P[+_, -_, -_, +_, +_], A](implicit P: Proxy[P]): Copipe[P, O, I, A] = {
         val PM: Monad[({ type f[+a] = Copipe[P, O, I, a] })#f] = P.monad[O, Unit, I, Unit]
         lazy val go: Copipe[P, O, I, A] = PM.bind(PM.bind(P.respond(()))(self andThen P.requestK[O, Unit, I, Unit] )) { _ => go }
         go
