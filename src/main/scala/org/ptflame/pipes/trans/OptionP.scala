@@ -91,7 +91,7 @@ private[trans] sealed trait OptionPProxy[P[+_, -_, -_, +_, +_]] extends Proxy[({
 
 private[trans] sealed trait OptionPProxyHoist extends ProxyHoist[OptionP] {
 
-  @inline implicit override def proxy[P[+_, -_, -_, +_, +_]](implicit P: Proxy[P]): Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = OptionP[P, uO, uI, dI, dO, a] })#f] = OptionP.OptionPProxy[P]
+  @inline implicit override def proxy[P[+_, -_, -_, +_, +_]](implicit P: Proxy[P]): Proxy[({ type f[+uO, -uI, -dI, +dO, +a] = OptionP[P, uO, uI, dI, dO, a] })#f] = OptionP.OptionPProxy[P](P)
 
   @inline override def liftP[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do, A](p: P[Uo, Ui, Di, Do, A])(implicit P: Proxy[P]): OptionP[P, Uo, Ui, Di, Do, A] = OptionP(P.monad[Uo, Ui, Di, Do].map[A, Option[A]](p) { Some(_) })
 
