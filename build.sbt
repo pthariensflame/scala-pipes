@@ -2,7 +2,7 @@ name                             := "scala-pipes"
 
 version                          := "1.0.0-SNAPSHOT"
 
-scalaVersion                     := "2.10.0"
+scalaVersion                     := "2.10.1"
 
 scalacOptions                   ++=  Seq(
   "-optimize"
