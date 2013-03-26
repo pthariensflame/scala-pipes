@@ -5,4 +5,4 @@ build.xml
 .DS_Store
 .history
 .classpath_nb
-netbeans.sbt
+project/netbeans.sbt
