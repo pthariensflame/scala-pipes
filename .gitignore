@@ -4,3 +4,4 @@ build.xml
 .lib/
 .DS_Store
 .history
+.classpath_nb
