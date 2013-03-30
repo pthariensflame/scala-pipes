@@ -234,9 +234,13 @@ object ProxyPlus {
 
 trait Interact[P[+_, -_, -_, +_, +_]] extends Proxy[P] {
 
-  def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => P[A1, A2, K1, K2, B2], p2: C1 => P[B1, B2, K1, K2, C2]): C1 => P[A1, A2, K1, K2, C2]
+  def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => P[A1, A2, K1, K2, B2], p2: C1 => P[B1, B2, K1, K2, C2]): C1 => P[A1, A2, K1, K2, C2] = { (v: C1) => this.requestBind[A1, A2, K1, K2, B1, B2, C2](p1)(p2(v)) }
 
-  def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => P[K1, K2, B1, B2, A2], p2: B2 => P[K1, K2, C1, C2, B1]): A1 => P[K1, K2, C1, C2, A2]
+  def requestBind[A1, A2, K1, K2, B1, B2, C2](p1: B1 => P[A1, A2, K1, K2, B2])(p2: P[B1, B2, K1, K2, C2]): P[A1, A2, K1, K2, C2]
+
+  def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => P[K1, K2, B1, B2, A2], p2: B2 => P[K1, K2, C1, C2, B1]): A1 => P[K1, K2, C1, C2, A2] = { (v: A1) => this.respondBind[K1, K2, B1, B2, A2, C1, C2](p1(v))(p2) }
+
+  def respondBind[K1, K2, B1, B2, A2, C1, C2](p1: P[K1, K2, B1, B2, A2])(p2: B2 => P[K1, K2, C1, C2, B1]): P[K1, K2, C1, C2, A2]
 
 }
 

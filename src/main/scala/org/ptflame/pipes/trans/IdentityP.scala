@@ -82,9 +82,13 @@ private[trans] sealed trait IdentityPInteract[P[+_, -_, -_, +_, +_]] extends Int
 
   implicit override val P: Interact[P]
 
-  def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => IdentityP[P, A1, A2, K1, K2, B2], p2: C1 => IdentityP[P, B1, B2, K1, K2, C2]): C1 => IdentityP[P, A1, A2, K1, K2, C2] = P.requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1 andThen { _.run }, p2 andThen { _.run }) andThen { IdentityP(_) }
+  override def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => IdentityP[P, A1, A2, K1, K2, B2], p2: C1 => IdentityP[P, B1, B2, K1, K2, C2]): C1 => IdentityP[P, A1, A2, K1, K2, C2] = P.requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1 andThen { _.run }, p2 andThen { _.run }) andThen { IdentityP(_) }
 
-  def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => IdentityP[P, K1, K2, B1, B2, A2], p2: B2 => IdentityP[P, K1, K2, C1, C2, B1]): A1 => IdentityP[P, K1, K2, C1, C2, A2] = P.respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1 andThen { _.run }, p2 andThen { _.run }) andThen { IdentityP(_) }
+  def requestBind[A1, A2, K1, K2, B1, B2, C2](p1: B1 => IdentityP[P, A1, A2, K1, K2, B2])(p2: IdentityP[P, B1, B2, K1, K2, C2]): IdentityP[P, A1, A2, K1, K2, C2] = IdentityP(P.requestBind[A1, A2, K1, K2, B1, B2, C2](p1 andThen { _.run })(p2.run))
+
+  override def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => IdentityP[P, K1, K2, B1, B2, A2], p2: B2 => IdentityP[P, K1, K2, C1, C2, B1]): A1 => IdentityP[P, K1, K2, C1, C2, A2] = P.respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1 andThen { _.run }, p2 andThen { _.run }) andThen { IdentityP(_) }
+
+  def respondBind[K1, K2, B1, B2, A2, C1, C2](p1: IdentityP[P, K1, K2, B1, B2, A2])(p2: B2 => IdentityP[P, K1, K2, C1, C2, B1]): IdentityP[P, K1, K2, C1, C2, A2] = IdentityP(P.respondBind[K1, K2, B1, B2, A2, C1, C2](p1.run)(p2 andThen { _.run }))
 
 }
 
