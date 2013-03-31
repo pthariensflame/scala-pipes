@@ -78,13 +78,13 @@ package object pipes extends ProxyBaseTInstances {
   type PipelineP[P[+_, -_, -_, +_, +_]] = {
     type p[+A] = Pipeline[P, A]
   }
-
-  type ProduceM[P[+_, -_, -_, +_, +_], +Uo] = RequestM[P, Unit, Unit, Nothing, Uo]
+/*
+  type ProduceM[P[+_, -_, -_, +_, +_], +Uo] = RespondM[P, Unit, Unit, Nothing, Uo]
 
   type ProduceMP[P[+_, -_, -_, +_, +_]] = {
     type p[+Uo] = ProduceM[P, Uo]
   }
-
+*/
   type CoproduceM[P[+_, -_, -_, +_, +_], +Do] = RequestM[P, Nothing, Unit, Unit, Do]
 
   type CoproduceMP[P[+_, -_, -_, +_, +_]] = {

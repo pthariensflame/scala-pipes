@@ -106,13 +106,13 @@ private[trans] sealed trait ReaderPInteract[E, P[+_, -_, -_, +_, +_]] extends In
 
   implicit override val P: Interact[P]
 
-  override def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => ReaderP[E, P, A1, A2, K1, K2, B2], p2: C1 => ReaderP[E, P, B1, B2, K1, K2, C2]): C1 => ReaderP[E, P, A1, A2, K1, K2, C2] = { v => ReaderP { x => P.requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1 andThen { _.run(x) }, p2 andThen { _.run(x) })(v) } }
+  override def requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1: B1 => ReaderP[E, P, A1, A2, K1, K2, B2], p2: C1 => ReaderP[E, P, B1, B2, K1, K2, C2]): C1 => ReaderP[E, P, A1, A2, K1, K2, C2] = { (v: C1) => ReaderP { (x: E) => P.requestWith[A1, A2, K1, K2, B1, B2, C1, C2](p1 andThen { _.run(x) }, p2 andThen { _.run(x) })(v) } }
 
-  def requestBind[A1, A2, K1, K2, B1, B2, C2](p1: B1 => ReaderP[E, P, A1, A2, K1, K2, B2])(p2: ReaderP[E, P, B1, B2, K1, K2, C2]): ReaderP[E, P, A1, A2, K1, K2, C2] = ReaderP { x => P.requestBind[A1, A2, K1, K2, B1, B2, C2](p1 andThen { _.run(x) })(p2.run(x))(v) }
+  def requestBind[A1, A2, K1, K2, B1, B2, C2](p1: B1 => ReaderP[E, P, A1, A2, K1, K2, B2])(p2: ReaderP[E, P, B1, B2, K1, K2, C2]): ReaderP[E, P, A1, A2, K1, K2, C2] = ReaderP { (x: E) => P.requestBind[A1, A2, K1, K2, B1, B2, C2](p1 andThen { _.run(x) })(p2.run(x)) }
 
-  override def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => ReaderP[E, P, K1, K2, B1, B2, A2], p2: B2 => ReaderP[E, P, K1, K2, C1, C2, B1]): A1 => ReaderP[E, P, K1, K2, C1, C2, A2] = { v => ReaderP { x => P.respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1 andThen { _.run(x) }, p2 andThen { _.run(x) })(v) } }
+  override def respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1: A1 => ReaderP[E, P, K1, K2, B1, B2, A2], p2: B2 => ReaderP[E, P, K1, K2, C1, C2, B1]): A1 => ReaderP[E, P, K1, K2, C1, C2, A2] = { (v: A1) => ReaderP { (x: E) => P.respondWith[K1, K2, B1, B2, A1, A2, C1, C2](p1 andThen { _.run(x) }, p2 andThen { _.run(x) })(v) } }
 
-  def respondBind[K1, K2, B1, B2, A2, C1, C2](p1: ReaderP[E, P, K1, K2, B1, B2, A2])(p2: B2 => ReaderP[E, P, K1, K2, C1, C2, B1]): ReaderP[E, P, K1, K2, C1, C2, A2] = v => ReaderP { x => P.respondBind[K1, K2, B1, B2, A2, C1, C2](p1.run(x))(p2 andThen { _.run(x) })(v) }
+  def respondBind[K1, K2, B1, B2, A2, C1, C2](p1: ReaderP[E, P, K1, K2, B1, B2, A2])(p2: B2 => ReaderP[E, P, K1, K2, C1, C2, B1]): ReaderP[E, P, K1, K2, C1, C2, A2] = ReaderP { (x: E) => P.respondBind[K1, K2, B1, B2, A2, C1, C2](p1.run(x))(p2 andThen { _.run(x) }) }
 
 }
 
