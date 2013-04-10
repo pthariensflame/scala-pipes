@@ -1,7 +1,7 @@
 package org.ptflame.pipes
 import scalaz.{Plus, Monad, PlusEmpty, MonadPlus, Semigroup, Monoid, Foldable, Foldable1}
 
-class RequestM[P[+_, -_, -_, +_, +_], Ui, -Di, +Do, +Uo](val run: P[Uo, Ui, Di, Do, Ui]) extends AnyVal {
+class RequestM[P[+_, -_, -_, +_, +_], Ui, -Di, +Do, +Uo](val run: P[Uo, Ui, Di, Do, Ui]) /*extends AnyVal*/ {
 
   def map[Uo1](f: Uo => Uo1)(implicit P: Interact[P]): RequestM[P, Ui, Di, Do, Uo1] = RequestM[P, Ui, Di, Do, Uo1](P.requestBind(f andThen P.requestK[Uo1, Ui, Di, Do])(run))
 
