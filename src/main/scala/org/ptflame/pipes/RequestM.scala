@@ -64,7 +64,7 @@ object RequestM extends RequestM0 {
   
   def empty[P[+_, -_, -_, +_, +_], Ui](implicit P: Proxy[P], Ui: Monoid[Ui]): RequestM[P, Ui, Any, Nothing, Nothing] = {
     implicit val PM: Monad[({ type f[+a] = P[Nothing, Ui, Any, Nothing, a] })#f] = P.monad[Nothing, Ui, Any, Nothing]
-    RequestM[Nothing, Ui, Any, Nothing](PM.point[Ui](Ui.zero))
+    RequestM[P, Ui, Any, Nothing, Nothing](PM.point[Ui](Ui.zero))
   }
 
   implicit def RequestMMonadPlus[P[+_, -_, -_, +_, +_], Ui, Di, Do](implicit P0: Interact[P], Ui0: Monoid[Ui]): MonadPlus[({ type f[+uO] = RequestM[P, Ui, Di, Do, uO] })#f] = new RequestMMonadPlus[P, Ui, Di, Do] {

@@ -5,9 +5,9 @@ class RespondM[P[+_, -_, -_, +_, +_], +Uo, -Ui, Di, +Do](val run: P[Uo, Ui, Di, 
 
   def map[Do1](f: Do => Do1)(implicit P: Interact[P]): RespondM[P, Uo, Ui, Di, Do1] = RespondM[P, Uo, Ui, Di, Do1](P.respondBind(run)(f andThen P.respondK[Uo, Ui, Di, Do1]))
 
-  def ap[Uo1 >: Uo, Ui1 <: Ui, Do1](f: RespondM[P, Uo1, Ui1, Di, (Do => Do1)])(implicit P: Interact[P]): RespondM[P, Uo1, Ui1, Di, Do1] = RespondM[P, Uo1, Ui1, Di, Do1](P.respondBind(f.run)((g: Do => Do1) => P.respondBind(run)((x: Do) => P.respond[Uo1, Ui1, Di, Do1](g(x)))))
+  def ap[Uo1 >: Uo, Ui1 <: Ui, Do1](f: RespondM[P, Uo1, Ui1, Di, (Do => Do1)])(implicit P: Interact[P]): RespondM[P, Uo1, Ui1, Di, Do1] = RespondM[P, Uo1, Ui1, Di, Do1](P.respondBind[Uo1, Ui1, Di, (Do => Do1), Di, Di, Do1](f.run)((g: Do => Do1) => P.respondBind[Uo1, Ui1, Di, Do, Di, Di, Do1](run)((x: Do) => P.respond[Uo1, Ui1, Di, Do1](g(x)))))
 
-  def flatMap[Uo1 >: Uo, Ui1 <: Ui, Do1](f: Do => RespondM[P, Di, Ui1, Uo1, Di, Do1])(implicit P: Interact[P]): RespondM[P, Ui1, Uo1, Do1] = RespondM[P, Ui1, Uo1, Di, Do1](P.respondBind(run)(f andThen { _.run }))
+  def flatMap[Uo1 >: Uo, Ui1 <: Ui, Do1](f: Do => RespondM[P, Uo1, Ui1, Di, Do1])(implicit P: Interact[P]): RespondM[P, Uo1, Ui1, Di, Do1] = RespondM[P, Uo1, Ui1, Di, Do1](P.respondBind[Uo1, Ui1, Di, Do, Di, Di, Do1](run)(f andThen { _.run }))
 
   @inline def flatten[Uo1 >: Uo, Ui1 <: Ui, Do1](implicit P: Interact[P], ev: Do <:< RespondM[P, Uo1, Ui1, Di, Do1]): RespondM[P, Uo1, Ui1, Di, Do1] = flatMap[Uo1, Ui1, Do1](ev)(P)
 
@@ -56,7 +56,7 @@ object RespondM extends RespondM0 {
 
   @inline def pointAll[P[+_, -_, -_, +_, +_], Di, F[_], Do](x: => F[Do])(implicit P: Proxy[P], Di: Monoid[Di], F: Foldable[F]): RespondM[P, Nothing, Any, Di, Do] = F.foldMap[Do, RespondM[P, Nothing, Any, Di, Do]](x)(RespondM.pointK[P, Di, Do](P))(RespondM.RespondMPlusEmpty[P, Nothing, Any, Di](P, Di).monoid[Do])
 
-  def pointAllK[P[+_, -_, -_, +_, +_], Di, F[_], Do](implicit P: Proxy[P], Di: Monoid[Di], F: Foldable[F]): F[Do] => RespondM[P, Di, Any, Nothing, Do] = { RespondM.pointAll[P, Di, F, Do](_)(P, Di, F) }
+  def pointAllK[P[+_, -_, -_, +_, +_], Di, F[_], Do](implicit P: Proxy[P], Di: Monoid[Di], F: Foldable[F]): F[Do] => RespondM[P, Nothing, Any, Di, Do] = { RespondM.pointAll[P, Di, F, Do](_)(P, Di, F) }
 
   @inline def pointAll1[P[+_, -_, -_, +_, +_], Di, F[_], Do](x: => F[Do])(implicit P: Proxy[P], Di: Semigroup[Di], F: Foldable1[F]): RespondM[P, Nothing, Any, Di, Do] = F.foldMap1[Do, RespondM[P, Nothing, Any, Di, Do]](x)(RespondM.pointK[P, Di, Do](P))(RespondM.RespondMPlus[P, Nothing, Any, Di](P, Di).semigroup[Do])
 
@@ -64,10 +64,10 @@ object RespondM extends RespondM0 {
   
   def empty[P[+_, -_, -_, +_, +_], Di](implicit P: Proxy[P], Di: Monoid[Di]): RespondM[P, Nothing, Any, Di, Nothing] = {
     implicit val PM: Monad[({ type f[+a] = P[Nothing, Any, Di, Nothing, a] })#f] = P.monad[Nothing, Any, Di, Nothing]
-    RespondM[Nothing, Any, Di, Nothing](PM.point[Di](Di.zero))
+    RespondM[P, Nothing, Any, Di, Nothing](PM.point[Di](Di.zero))
   }
 
-  implicit def RespondMMonadPlus[P[+_, -_, -_, +_, +_], Uo, Ui, Di](implicit P0: Interact[P], Di0: Monoid[Di]): MonadPlus[({ type f[+uO] = RespondM[P, Di, Ui, Uo, uO] })#f] = new RespondMMonadPlus[P, Di, Ui, Uo] {
+  implicit def RespondMMonadPlus[P[+_, -_, -_, +_, +_], Uo, Ui, Di](implicit P0: Interact[P], Di0: Monoid[Di]): MonadPlus[({ type f[+uO] = RespondM[P, Uo, Ui, Di, uO] })#f] = new RespondMMonadPlus[P, Uo, Ui, Di] {
     implicit override val P: Interact[P] = P0
     implicit override val Di: Monoid[Di] = Di0
   }
@@ -77,13 +77,13 @@ object RespondM extends RespondM0 {
 private[pipes] sealed trait RespondMMonad[P[+_, -_, -_, +_, +_], Uo, Ui, Di] extends Monad[({ type f[+dO] = RespondM[P, Uo, Ui, Di, dO] })#f] {
   implicit val P: Interact[P]
 
-  @inline override def map[A, B](fa: RespondM[P, Di, Ui, Uo, A])(f: A => B): RespondM[P, Di, Ui, Uo, B] = fa.map[B](f)(P)
+  @inline override def map[A, B](fa: RespondM[P, Uo, Ui, Di, A])(f: A => B): RespondM[P, Uo, Ui, Di, B] = fa.map[B](f)(P)
 
   @inline override def bind[A, B](fa: RespondM[P, Uo, Ui, Di, A])(f: A => RespondM[P, Uo, Ui, Di, B]): RespondM[P, Uo, Ui, Di, B] = fa.flatMap[Uo, Ui, B](f)(P)
 
   @inline override def point[A](a: => A): RespondM[P, Uo, Ui, Di, A] = RespondM.point[P, Di, A](a)(P)
 
-  @inline override def join[A](ffa: RespondM[P, Uo, Ui, Di, RespondM[P, Uo, Ui, Di, A]]) = ffa.flatten[Ui, Uo, A](P, implicitly[RespondM[P, Uo, Ui, Di, A] <:< RespondM[P, Uo, Ui, Di, A]])
+  @inline override def join[A](ffa: RespondM[P, Uo, Ui, Di, RespondM[P, Uo, Ui, Di, A]]) = ffa.flatten[Uo, Ui, A](P, implicitly[RespondM[P, Uo, Ui, Di, A] <:< RespondM[P, Uo, Ui, Di, A]])
 
 }
 
@@ -95,14 +95,14 @@ private[pipes] sealed trait RespondMPlus[P[+_, -_, -_, +_, +_], Uo, Ui, Di] exte
 
 }
 
-private[pipes] sealed trait RespondMPlusEmpty[P[+_, -_, -_, +_, +_], Di, Ui, Uo] extends PlusEmpty[({ type f[+dO] = RespondM[P, Di, Ui, Uo, dO] })#f] with RespondMPlus[P, Uo, Ui, Di] {
+private[pipes] sealed trait RespondMPlusEmpty[P[+_, -_, -_, +_, +_], Uo, Ui, Di] extends PlusEmpty[({ type f[+dO] = RespondM[P, Uo, Ui, Di, dO] })#f] with RespondMPlus[P, Uo, Ui, Di] {
   implicit override val Di: Monoid[Di]
 
   @inline override def empty[A]: RespondM[P, Uo, Ui, Di, A] = RespondM.empty[P, Di](P, Di)
 
 }
 
-private[pipes] sealed trait RespondMMonadPlus[P[+_, -_, -_, +_, +_], Di, Ui, Uo] extends MonadPlus[({ type f[+dO] = RespondM[P, Di, Ui, Uo, dO] })#f] with RespondMMonad[P, Uo, Ui, Di] with RespondMPlusEmpty[P, Uo, Ui, Di] {
+private[pipes] sealed trait RespondMMonadPlus[P[+_, -_, -_, +_, +_], Uo, Ui, Di] extends MonadPlus[({ type f[+dO] = RespondM[P, Uo, Ui, Di, dO] })#f] with RespondMMonad[P, Uo, Ui, Di] with RespondMPlusEmpty[P, Uo, Ui, Di] {
   implicit override val P: Interact[P]
 
   @inline override def filter[A](fa: RespondM[P, Uo, Ui, Di, A])(f: A => Boolean): RespondM[P, Uo, Ui, Di, A] = fa.withFilter(f)(P, Di)
