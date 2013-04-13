@@ -1,10 +1,10 @@
 package org.ptflame.pipes
 package trans
-import scalaz.Monad
+import scalaz.{Monad, MonadPlus}
 
 final case class OptionP[P[+_, -_, -_, +_, +_], +Uo, -Ui, -Di, +Do, +A](run: P[Uo, Ui, Di, Do, Option[A]]) {
 
-  def map[Uo1 >: Uo, Ui1 <: Ui, Di1 <: Di, Do1 >: Do, B](f: A => B)(implicit P: Proxy[P]): OptionP[P, Uo1, Ui1, Di1, Do1, B] = OptionP(P.monad[Uo1, Ui1, Di1, Do1].map[Option[A], Option[B]](this.run) {
+  def map[B](f: A => B)(implicit P: Proxy[P]): OptionP[P, Uo, Ui, Di, Do, B] = OptionP(P.monad[Uo, Ui, Di, Do].map[Option[A], Option[B]](this.run) {
       case None => None
       case Some(v) => Some(f(v))
     })
@@ -29,6 +29,16 @@ final case class OptionP[P[+_, -_, -_, +_, +_], +Uo, -Ui, -Di, +Do, +A](run: P[U
 
   def hoistP[Uo1 >: Uo, Ui1 <: Ui, Di1 <: Di, Do1 >: Do, A1 >: A, Q[+_, -_, -_, +_, +_]](f: ProxyNaturalTransformation[P, Q]): OptionP[Q, Uo1, Ui1, Di1, Do1, A1] = OptionP(f(this.run))
 
+  def withFilter(f: A => Boolean)(implicit P: Proxy[P]): OptionP[P, Uo, Ui, Di, Do, A] = OptionP(P.monad[Uo, Ui, Di, Do].map[Option[A], Option[A]](this.run)(v => v.filter(f)))
+
+  @inline def filter(f: A => Boolean)(implicit P: Proxy[P]): OptionP[P, Uo, Ui, Di, Do, A] = this.withFilter(f)(P)
+
+  def plus[Uo1 >: Uo, Ui1 <: Ui, Di1 <: Di, Do1 >: Do, A1 >: A](other: OptionP[P, Uo1, Ui1, Di1, Do1, A1])(implicit P: Proxy[P]): OptionP[P, Uo1, Ui1, Di1, Do1, A1] = OptionP(P.monad[Uo1, Ui1, Di1, Do1].lift2[Option[A], Option[A1], Option[A1]]((x, y) => (x, y) match {
+        case (v, None) => v
+        case (None, v) => v
+        case (v, _) => v
+      })(this.run, other.run))
+
 }
 
 object OptionP extends OptionPInstances {
@@ -47,7 +57,7 @@ trait OptionPInstances {
 
   }
 
-  implicit def OptionPMonad[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit Px: Proxy[P]): Monad[({ type f[+a] = OptionP[P, Uo, Ui, Di, Do, a] })#f] = new OptionPMonad[P, Uo, Ui, Di, Do] {
+  implicit def OptionPMonadPlus[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do](implicit Px: Proxy[P]): MonadPlus[({ type f[+a] = OptionP[P, Uo, Ui, Di, Do, a] })#f] = new OptionPMonadPlus[P, Uo, Ui, Di, Do] {
 
     implicit override val P: Proxy[P] = Px
 
@@ -57,13 +67,13 @@ trait OptionPInstances {
 
 }
 
-private[trans] sealed trait OptionPMonad[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do] extends Monad[({ type f[+a] = OptionP[P, Uo, Ui, Di, Do, a] })#f] {
+private[trans] sealed trait OptionPMonadPlus[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do] extends MonadPlus[({ type f[+a] = OptionP[P, Uo, Ui, Di, Do, a] })#f] {
 
   implicit val P: Proxy[P]
 
   @inline override def point[A](a: => A): OptionP[P, Uo, Ui, Di, Do, A] = OptionP(P.monad[Uo, Ui, Di, Do].point[Option[A]](Some(a)))
 
-  @inline override def map[A, B](fa: OptionP[P, Uo, Ui, Di, Do, A])(f: A => B): OptionP[P, Uo, Ui, Di, Do, B] = fa.map[Uo, Ui, Di, Do, B](f)(P)
+  @inline override def map[A, B](fa: OptionP[P, Uo, Ui, Di, Do, A])(f: A => B): OptionP[P, Uo, Ui, Di, Do, B] = fa.map[B](f)(P)
 
   @inline override def ap[A, B](fa: => OptionP[P, Uo, Ui, Di, Do, A])(f: => OptionP[P, Uo, Ui, Di, Do, (A => B)]): OptionP[P, Uo, Ui, Di, Do, B] = fa.ap[Uo, Ui, Di, Do, B](f)(P)
 
@@ -71,13 +81,19 @@ private[trans] sealed trait OptionPMonad[P[+_, -_, -_, +_, +_], Uo, Ui, Di, Do] 
 
   @inline override def join[A](fa: OptionP[P, Uo, Ui, Di, Do, OptionP[P, Uo, Ui, Di, Do, A]]): OptionP[P, Uo, Ui, Di, Do, A] = fa.flatten[Uo, Ui, Di, Do, A](P, implicitly[OptionP[P, Uo, Ui, Di, Do, A] <:< OptionP[P, Uo, Ui, Di, Do, A]])
 
+  @inline override def empty[A]: OptionP[P, Uo, Ui, Di, Do, A] = OptionP(P.monad[Uo, Ui, Di, Do].point[Option[A]](None))
+
+  @inline override def plus[A](a: OptionP[P, Uo, Ui, Di, Do, A], b: => OptionP[P, Uo, Ui, Di, Do, A]): OptionP[P, Uo, Ui, Di, Do, A] = a.plus[Uo, Ui, Di, Do, A](b)(P)
+
+  @inline override def filter[A](fa: OptionP[P, Uo, Ui, Di, Do, A])(f: A => Boolean): OptionP[P, Uo, Ui, Di, Do, A] = fa.withFilter(f)(P)
+
 }
 
 private[trans] sealed trait OptionPProxy[P[+_, -_, -_, +_, +_]] extends Proxy[({ type p[+uO, -uI, -dI, +dO, +a] = OptionP[P, uO, uI, dI, dO, a] })#p] {
 
   implicit val P: Proxy[P]
 
-  @inline implicit override def monad[Uo, Ui, Di, Do]: Monad[({ type f[+a] = OptionP[P, Uo, Ui, Di, Do, a] })#f] = OptionP.OptionPMonad[P, Uo, Ui, Di, Do](P)
+  @inline implicit override def monad[Uo, Ui, Di, Do]: Monad[({ type f[+a] = OptionP[P, Uo, Ui, Di, Do, a] })#f] = OptionP.OptionPMonadPlus[P, Uo, Ui, Di, Do](P)
 
   @inline override def request[Uo, Ui, Di, Do](uO: => Uo): OptionP[P, Uo, Ui, Di, Do, Ui] = OptionP(P.monad[Uo, Ui, Di, Do].map(P.request[Uo, Ui, Di, Do](uO)) { Some(_) })
 

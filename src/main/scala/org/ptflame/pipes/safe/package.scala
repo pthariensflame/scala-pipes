@@ -1,5 +1,5 @@
 package org.ptflame.pipes
 
-package object safe {
+package object safe extends TryPInstances {
 
 }
