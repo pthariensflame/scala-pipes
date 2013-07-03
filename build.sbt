@@ -29,7 +29,7 @@ scalacOptions                   ++=  Seq(
 scalacOptions in Compile in doc ++=  Seq(
   "-doc-title"        , "scala-pipes"
   ,
-  "-doc-version"      , "1.0.0"
+  "-doc-version"      , "1.0.0-SNAPSHOT"
   ,
   "-groups"
   ,
